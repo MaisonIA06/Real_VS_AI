@@ -1,0 +1,215 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg-primary: #0f0a1a;
+  --color-bg-secondary: #1a1025;
+  --color-accent-primary: #d946ef;
+  --color-accent-secondary: #22d3ee;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Satoshi', system-ui, sans-serif;
+  background: var(--color-bg-primary);
+  color: #f1f5f9;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent-primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c026d3;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(26, 16, 37, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(217, 70, 239, 0.2);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #d946ef 0%, #22d3ee 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow effects */
+.glow-primary {
+  box-shadow: 0 0 30px rgba(217, 70, 239, 0.4);
+}
+
+.glow-success {
+  box-shadow: 0 0 30px rgba(34, 197, 94, 0.5);
+}
+
+.glow-error {
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+}
+
+/* Animated background */
+.bg-animated {
+  background: 
+    radial-gradient(ellipse at 20% 80%, rgba(217, 70, 239, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(34, 211, 238, 0.15) 0%, transparent 50%),
+    var(--color-bg-primary);
+}
+
+/* Button styles */
+.btn-primary {
+  @apply px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300;
+  background: linear-gradient(135deg, #d946ef 0%, #a21caf 100%);
+  box-shadow: 0 4px 20px rgba(217, 70, 239, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 30px rgba(217, 70, 239, 0.5);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  @apply px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300;
+  background: rgba(217, 70, 239, 0.1);
+  border: 2px solid rgba(217, 70, 239, 0.5);
+}
+
+.btn-secondary:hover {
+  background: rgba(217, 70, 239, 0.2);
+  border-color: #d946ef;
+}
+
+/* Card styles */
+.card {
+  @apply rounded-2xl p-6;
+  background: linear-gradient(145deg, rgba(26, 16, 37, 0.8), rgba(15, 10, 26, 0.9));
+  border: 1px solid rgba(217, 70, 239, 0.15);
+}
+
+.card:hover {
+  border-color: rgba(217, 70, 239, 0.4);
+}
+
+/* Media card for game */
+.media-card {
+  @apply relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-300;
+  border: 3px solid transparent;
+}
+
+.media-card:hover {
+  transform: scale(1.02);
+  border-color: rgba(217, 70, 239, 0.5);
+}
+
+.media-card.selected-correct {
+  border-color: #22c55e;
+  animation: correctPulse 0.5s ease-out;
+}
+
+.media-card.selected-wrong {
+  border-color: #ef4444;
+  animation: wrongShake 0.5s ease-out;
+}
+
+@keyframes correctPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes wrongShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-10px); }
+  40%, 80% { transform: translateX(10px); }
+}
+
+/* Progress bar */
+.progress-bar {
+  @apply h-2 rounded-full overflow-hidden;
+  background: rgba(217, 70, 239, 0.2);
+}
+
+.progress-bar-fill {
+  @apply h-full rounded-full transition-all duration-500 ease-out;
+  background: linear-gradient(90deg, #d946ef, #22d3ee);
+}
+
+/* Streak indicator */
+.streak-badge {
+  @apply inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  animation: streakGlow 1s ease-in-out infinite alternate;
+}
+
+@keyframes streakGlow {
+  from { box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+  to { box-shadow: 0 0 25px rgba(245, 158, 11, 0.8); }
+}
+
+/* Timer styles */
+.timer {
+  @apply text-4xl font-bold font-display;
+}
+
+.timer.warning {
+  color: #f59e0b;
+  animation: timerPulse 0.5s ease-in-out infinite;
+}
+
+.timer.danger {
+  color: #ef4444;
+  animation: timerPulse 0.25s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Input styles */
+.input-styled {
+  @apply w-full px-4 py-3 rounded-xl bg-dark-800 border-2 border-dark-600 text-white placeholder-dark-400 focus:outline-none focus:border-primary-500 transition-colors;
+}
+
+/* Table styles for admin */
+.table-admin {
+  @apply w-full;
+}
+
+.table-admin th {
+  @apply px-4 py-3 text-left text-sm font-semibold text-dark-300 uppercase tracking-wider border-b border-dark-700;
+}
+
+.table-admin td {
+  @apply px-4 py-4 border-b border-dark-800;
+}
+
+.table-admin tr:hover td {
+  background: rgba(217, 70, 239, 0.05);
+}
+

@@ -1,0 +1,161 @@
+"""
+Serializers for the game API.
+"""
+from rest_framework import serializers
+from .models import Category, MediaPair, Quiz, GameSession, GameAnswer, GlobalStats
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'description']
+
+
+class MediaPairGameSerializer(serializers.ModelSerializer):
+    """Serializer for media pairs during gameplay (hides which is real)."""
+    category = CategorySerializer(read_only=True)
+    left_media = serializers.SerializerMethodField()
+    right_media = serializers.SerializerMethodField()
+    audio_media = serializers.SerializerMethodField()
+    real_position = serializers.SerializerMethodField()
+    is_real = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MediaPair
+        fields = ['id', 'category', 'media_type', 'difficulty', 'left_media', 'right_media', 'audio_media', 'real_position', 'is_real']
+
+    def get_left_media(self, obj):
+        """For image/video: left media (real or AI depending on position)."""
+        if obj.media_type == 'audio':
+            return None
+        request = self.context.get('request')
+        positions = self.context.get('positions', {})
+        pos = positions.get(obj.id, 'left')
+        
+        if pos == 'left':
+            return request.build_absolute_uri(obj.real_media.url) if obj.real_media else None
+        return request.build_absolute_uri(obj.ai_media.url) if obj.ai_media else None
+
+    def get_right_media(self, obj):
+        """For image/video: right media (real or AI depending on position)."""
+        if obj.media_type == 'audio':
+            return None
+        request = self.context.get('request')
+        positions = self.context.get('positions', {})
+        pos = positions.get(obj.id, 'left')
+        
+        if pos == 'right':
+            return request.build_absolute_uri(obj.real_media.url) if obj.real_media else None
+        return request.build_absolute_uri(obj.ai_media.url) if obj.ai_media else None
+
+    def get_audio_media(self, obj):
+        """For audio: the audio file URL."""
+        if obj.media_type != 'audio':
+            return None
+        request = self.context.get('request')
+        return request.build_absolute_uri(obj.audio_media.url) if obj.audio_media else None
+
+    def get_is_real(self, obj):
+        """For audio: whether it's real (only revealed after answer)."""
+        if obj.media_type != 'audio':
+            return None
+        if self.context.get('reveal_answer'):
+            return obj.is_real
+        return None
+
+    def get_real_position(self, obj):
+        """Only included in response after answer is submitted."""
+        if self.context.get('reveal_answer'):
+            if obj.media_type == 'audio':
+                return 'real' if obj.is_real else 'ai'
+            positions = self.context.get('positions', {})
+            return positions.get(obj.id, 'left')
+        return None
+
+
+class QuizListSerializer(serializers.ModelSerializer):
+    pairs_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Quiz
+        fields = ['id', 'name', 'description', 'is_random', 'pairs_count']
+
+    def get_pairs_count(self, obj):
+        if obj.is_random:
+            return MediaPair.objects.filter(is_active=True).count()
+        return obj.pairs.filter(is_active=True).count()
+
+
+class GameSessionCreateSerializer(serializers.Serializer):
+    """Serializer for creating a new game session."""
+    quiz_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class GameSessionSerializer(serializers.ModelSerializer):
+    pairs = serializers.SerializerMethodField()
+    quiz_name = serializers.CharField(source='quiz.name', read_only=True, allow_null=True)
+
+    class Meta:
+        model = GameSession
+        fields = ['session_key', 'quiz_name', 'pairs', 'score', 'current_streak', 'streak_max']
+
+    def get_pairs(self, obj):
+        # Get pairs from session data stored in context
+        pairs_data = self.context.get('pairs_data', [])
+        return pairs_data
+
+
+class AnswerSubmitSerializer(serializers.Serializer):
+    """Serializer for submitting an answer."""
+    pair_id = serializers.IntegerField()
+    choice = serializers.ChoiceField(choices=['left', 'right', 'real', 'ai'])
+    response_time_ms = serializers.IntegerField(min_value=0)
+
+
+class AnswerResponseSerializer(serializers.Serializer):
+    """Serializer for answer response."""
+    is_correct = serializers.BooleanField()
+    hint = serializers.CharField()
+    real_position = serializers.CharField()
+    points_earned = serializers.IntegerField()
+    current_streak = serializers.IntegerField()
+    global_stats = serializers.DictField()
+
+
+class GameResultSerializer(serializers.ModelSerializer):
+    """Serializer for final game results."""
+    answers = serializers.SerializerMethodField()
+    quiz_name = serializers.CharField(source='quiz.name', read_only=True, allow_null=True)
+
+    class Meta:
+        model = GameSession
+        fields = [
+            'session_key', 'quiz_name', 'pseudo', 'score',
+            'streak_max', 'time_total_ms', 'is_completed', 'answers'
+        ]
+
+    def get_answers(self, obj):
+        return [
+            {
+                'order': a.order,
+                'is_correct': a.is_correct,
+                'response_time_ms': a.response_time_ms,
+                'points_earned': a.points_earned,
+            }
+            for a in obj.answers.all()
+        ]
+
+
+class LeaderboardEntrySerializer(serializers.ModelSerializer):
+    """Serializer for leaderboard entries."""
+    quiz_name = serializers.CharField(source='quiz.name', read_only=True, allow_null=True)
+
+    class Meta:
+        model = GameSession
+        fields = ['pseudo', 'score', 'streak_max', 'time_total_ms', 'quiz_name', 'created_at']
+
+
+class PseudoSubmitSerializer(serializers.Serializer):
+    """Serializer for submitting a pseudo for leaderboard."""
+    pseudo = serializers.CharField(max_length=50, min_length=2)
+
