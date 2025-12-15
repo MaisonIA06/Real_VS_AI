@@ -168,6 +168,11 @@ class QuizPair(models.Model):
 
 class GameSession(models.Model):
     """A game session for a player."""
+    
+    class AudienceType(models.TextChoices):
+        SCHOOL = 'school', 'Scolaire'
+        PUBLIC = 'public', 'Grand Public'
+    
     session_key = models.UUIDField(default=uuid.uuid4, unique=True)
     quiz = models.ForeignKey(
         Quiz,
@@ -175,6 +180,12 @@ class GameSession(models.Model):
         null=True,
         blank=True,
         related_name='game_sessions'
+    )
+    audience_type = models.CharField(
+        max_length=10,
+        choices=AudienceType.choices,
+        default=AudienceType.PUBLIC,
+        help_text="Type d'audience: scolaire ou grand public"
     )
     pseudo = models.CharField(max_length=50, blank=True)
     score = models.IntegerField(default=0)

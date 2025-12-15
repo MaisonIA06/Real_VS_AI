@@ -102,6 +102,11 @@ class QuizListSerializer(serializers.ModelSerializer):
 class GameSessionCreateSerializer(serializers.Serializer):
     """Serializer for creating a new game session."""
     quiz_id = serializers.IntegerField(required=False, allow_null=True)
+    audience_type = serializers.ChoiceField(
+        choices=['school', 'public'],
+        required=True,
+        help_text="Type d'audience: 'school' pour scolaire, 'public' pour grand public"
+    )
 
 
 class GameSessionSerializer(serializers.ModelSerializer):

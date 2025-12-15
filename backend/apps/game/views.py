@@ -68,8 +68,11 @@ class GameSessionView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Get audience type from request
+        audience_type = serializer.validated_data.get('audience_type', 'public')
+
         # Create session
-        session = GameSession.objects.create(quiz=quiz)
+        session = GameSession.objects.create(quiz=quiz, audience_type=audience_type)
 
         # Generate random positions for real media (left or right) - only for image/video
         positions = {}

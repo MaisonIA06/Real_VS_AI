@@ -2,30 +2,16 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
-import {
-  LayoutDashboard,
   Image,
   FileQuestion,
   FolderOpen,
   Users,
-  TrendingUp,
   Trophy,
-  Clock,
+  GraduationCap,
 } from 'lucide-react';
 import { adminApi } from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
 
-const COLORS = ['#d946ef', '#22d3ee', '#f59e0b', '#22c55e'];
 
 export default function AdminDashboard() {
   const { data: stats, isLoading } = useQuery({
@@ -119,9 +105,9 @@ export default function AdminDashboard() {
           })}
         </div>
 
-        {/* Charts Row */}
+        {/* Taux de réussite par audience */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Average Score */}
+          {/* Taux de réussite Scolaire */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -129,16 +115,28 @@ export default function AdminDashboard() {
             className="card"
           >
             <h3 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-primary-400" />
-              Score moyen
+              <GraduationCap className="w-5 h-5 text-primary-400" />
+              Taux de réussite - Scolaire
             </h3>
-            <div className="text-5xl font-bold gradient-text mb-2">
-              {stats?.average_score?.toFixed(0) || 0}
+            <div className="flex items-end gap-2 mb-2">
+              <div className="text-5xl font-bold text-primary-400">
+                {stats?.school_stats?.success_rate || 0}%
+              </div>
             </div>
-            <p className="text-dark-400">points par partie</p>
+            <div className="space-y-1 text-sm text-dark-400">
+              <p>{stats?.school_stats?.total_sessions || 0} sessions</p>
+              <p>{stats?.school_stats?.correct_answers || 0} / {stats?.school_stats?.total_answers || 0} bonnes réponses</p>
+            </div>
+            {/* Barre de progression */}
+            <div className="mt-4 h-3 bg-dark-700 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full transition-all duration-500"
+                style={{ width: `${stats?.school_stats?.success_rate || 0}%` }}
+              />
+            </div>
           </motion.div>
 
-          {/* Top Pairs */}
+          {/* Taux de réussite Grand Public */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -146,34 +144,25 @@ export default function AdminDashboard() {
             className="card"
           >
             <h3 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
-              <Image className="w-5 h-5 text-accent-400" />
-              Paires les plus jouées
+              <Users className="w-5 h-5 text-accent-400" />
+              Taux de réussite - Grand Public
             </h3>
-            {stats?.top_pairs && stats.top_pairs.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={stats.top_pairs.slice(0, 5)}>
-                  <XAxis
-                    dataKey="media_pair__category__name"
-                    tick={{ fill: '#94a3b8', fontSize: 12 }}
-                    axisLine={{ stroke: '#334155' }}
-                  />
-                  <YAxis
-                    tick={{ fill: '#94a3b8', fontSize: 12 }}
-                    axisLine={{ stroke: '#334155' }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1e293b',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Bar dataKey="total_attempts" fill="#d946ef" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-dark-400 text-center py-8">Aucune donnée disponible</p>
-            )}
+            <div className="flex items-end gap-2 mb-2">
+              <div className="text-5xl font-bold text-accent-400">
+                {stats?.public_stats?.success_rate || 0}%
+              </div>
+            </div>
+            <div className="space-y-1 text-sm text-dark-400">
+              <p>{stats?.public_stats?.total_sessions || 0} sessions</p>
+              <p>{stats?.public_stats?.correct_answers || 0} / {stats?.public_stats?.total_answers || 0} bonnes réponses</p>
+            </div>
+            {/* Barre de progression */}
+            <div className="mt-4 h-3 bg-dark-700 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-accent-500 to-accent-400 rounded-full transition-all duration-500"
+                style={{ width: `${stats?.public_stats?.success_rate || 0}%` }}
+              />
+            </div>
           </motion.div>
         </div>
 
@@ -194,15 +183,25 @@ export default function AdminDashboard() {
                 <thead>
                   <tr>
                     <th>Pseudo</th>
+                    <th>Type</th>
                     <th>Score</th>
                     <th>Streak Max</th>
                     <th>Date</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {stats.recent_sessions.map((session, index) => (
+                  {stats.recent_sessions.map((session: any, index: number) => (
                     <tr key={index}>
                       <td className="font-semibold">{session.pseudo || 'Anonyme'}</td>
+                      <td>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          session.audience_type === 'school' 
+                            ? 'bg-primary-500/20 text-primary-400' 
+                            : 'bg-accent-500/20 text-accent-400'
+                        }`}>
+                          {session.audience_type === 'school' ? 'Scolaire' : 'Grand Public'}
+                        </span>
+                      </td>
                       <td className="gradient-text font-bold">{session.score}</td>
                       <td>{session.streak_max}</td>
                       <td className="text-dark-400">

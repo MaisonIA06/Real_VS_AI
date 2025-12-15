@@ -1,24 +1,32 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Play, Zap, Trophy, Shuffle } from 'lucide-react';
+import { Play, Zap, Trophy, Shuffle, GraduationCap, Users, X } from 'lucide-react';
 import { gameApi } from '../services/api';
+
+type AudienceType = 'school' | 'public';
 
 export default function HomePage() {
   const navigate = useNavigate();
   const [isStarting, setIsStarting] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<number | null>(null);
+  const [showAudienceModal, setShowAudienceModal] = useState(false);
 
   const { data: quizzes, isLoading } = useQuery({
     queryKey: ['quizzes'],
     queryFn: () => gameApi.getQuizzes().then((res) => res.data),
   });
 
-  const startGame = async (quizId?: number) => {
+  const handleStartClick = () => {
+    setShowAudienceModal(true);
+  };
+
+  const startGame = async (audienceType: AudienceType) => {
+    setShowAudienceModal(false);
     setIsStarting(true);
     try {
-      const response = await gameApi.startSession(quizId);
+      const response = await gameApi.startSession(selectedQuiz ?? undefined, audienceType);
       // Stocker les paires dans localStorage avant de naviguer
       localStorage.setItem(`pairs_${response.data.session_key}`, JSON.stringify(response.data.pairs));
       navigate(`/game/${response.data.session_key}`);
@@ -143,7 +151,7 @@ export default function HomePage() {
           transition={{ delay: 0.7 }}
         >
           <button
-            onClick={() => startGame(selectedQuiz ?? undefined)}
+            onClick={handleStartClick}
             disabled={isStarting}
             className="btn-primary inline-flex items-center gap-3 text-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -177,6 +185,75 @@ export default function HomePage() {
           </button>
         </motion.div>
       </motion.div>
+
+      {/* Modal de sélection d'audience */}
+      <AnimatePresence>
+        {showAudienceModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark-900/80 backdrop-blur-sm"
+            onClick={() => setShowAudienceModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="card max-w-md w-full p-8 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Bouton fermer */}
+              <button
+                onClick={() => setShowAudienceModal(false)}
+                className="absolute top-4 right-4 text-dark-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              {/* Titre */}
+              <h2 className="font-display text-2xl font-bold text-center mb-2">
+                Qui êtes-vous ?
+              </h2>
+              <p className="text-dark-400 text-center mb-8">
+                Cette information nous aide à améliorer l'expérience
+              </p>
+
+              {/* Options */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Option Scolaire */}
+                <button
+                  onClick={() => startGame('school')}
+                  className="group flex flex-col items-center gap-4 p-6 rounded-xl bg-dark-800 border-2 border-dark-700 hover:border-primary-500 hover:bg-dark-700 transition-all"
+                >
+                  <div className="w-16 h-16 rounded-full bg-primary-500/20 flex items-center justify-center group-hover:bg-primary-500/30 transition-colors">
+                    <GraduationCap className="w-8 h-8 text-primary-400" />
+                  </div>
+                  <div className="text-center">
+                    <div className="font-display text-lg font-semibold mb-1">Scolaire</div>
+                    <div className="text-dark-400 text-sm">École, collège, lycée...</div>
+                  </div>
+                </button>
+
+                {/* Option Grand Public */}
+                <button
+                  onClick={() => startGame('public')}
+                  className="group flex flex-col items-center gap-4 p-6 rounded-xl bg-dark-800 border-2 border-dark-700 hover:border-accent-500 hover:bg-dark-700 transition-all"
+                >
+                  <div className="w-16 h-16 rounded-full bg-accent-500/20 flex items-center justify-center group-hover:bg-accent-500/30 transition-colors">
+                    <Users className="w-8 h-8 text-accent-400" />
+                  </div>
+                  <div className="text-center">
+                    <div className="font-display text-lg font-semibold mb-1">Grand Public</div>
+                    <div className="text-dark-400 text-sm">Particulier, entreprise...</div>
+                  </div>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

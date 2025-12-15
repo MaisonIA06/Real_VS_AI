@@ -80,34 +80,50 @@ class QuizViewSet(viewsets.ModelViewSet):
 @api_view(['GET'])
 def dashboard_stats(request):
     """Get dashboard statistics."""
+    from apps.game.models import GameAnswer
+    
     total_categories = Category.objects.count()
     total_pairs = MediaPair.objects.count()
     total_quizzes = Quiz.objects.count()
     total_sessions = GameSession.objects.count()
     completed_sessions = GameSession.objects.filter(is_completed=True).count()
 
-    # Average score
-    avg_score = GameSession.objects.filter(
-        is_completed=True
-    ).aggregate(avg=Avg('score'))['avg'] or 0
+    # Taux de réussite par type d'audience
+    def calculate_success_rate(audience_type):
+        """Calcule le taux de réussite pour un type d'audience."""
+        sessions = GameSession.objects.filter(
+            is_completed=True,
+            audience_type=audience_type
+        )
+        total_answers = GameAnswer.objects.filter(session__in=sessions).count()
+        correct_answers = GameAnswer.objects.filter(
+            session__in=sessions,
+            is_correct=True
+        ).count()
+        
+        if total_answers == 0:
+            return {
+                'success_rate': 0,
+                'total_sessions': 0,
+                'total_answers': 0,
+                'correct_answers': 0
+            }
+        
+        return {
+            'success_rate': round((correct_answers / total_answers) * 100, 1),
+            'total_sessions': sessions.count(),
+            'total_answers': total_answers,
+            'correct_answers': correct_answers
+        }
+    
+    school_stats = calculate_success_rate('school')
+    public_stats = calculate_success_rate('public')
 
     # Recent sessions
     recent_sessions = list(
         GameSession.objects.filter(is_completed=True)
         .order_by('-created_at')[:10]
-        .values('pseudo', 'score', 'streak_max', 'created_at')
-    )
-
-    # Top pairs by attempts
-    top_pairs = list(
-        GlobalStats.objects.select_related('media_pair', 'media_pair__category')
-        .order_by('-total_attempts')[:10]
-        .values(
-            'media_pair__id',
-            'media_pair__category__name',
-            'total_attempts',
-            'correct_answers'
-        )
+        .values('pseudo', 'score', 'streak_max', 'created_at', 'audience_type')
     )
 
     stats = {
@@ -116,9 +132,9 @@ def dashboard_stats(request):
         'total_quizzes': total_quizzes,
         'total_sessions': total_sessions,
         'completed_sessions': completed_sessions,
-        'average_score': round(avg_score, 1),
+        'school_stats': school_stats,
+        'public_stats': public_stats,
         'recent_sessions': recent_sessions,
-        'top_pairs': top_pairs,
     }
 
     return Response(stats)

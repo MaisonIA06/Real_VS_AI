@@ -87,8 +87,8 @@ export interface LeaderboardEntry {
 export const gameApi = {
   getQuizzes: () => api.get<Quiz[]>('/game/quizzes/'),
 
-  startSession: (quizId?: number) =>
-    api.post<GameSession>('/game/sessions/', { quiz_id: quizId }),
+  startSession: (quizId?: number, audienceType: 'school' | 'public' = 'public') =>
+    api.post<GameSession>('/game/sessions/', { quiz_id: quizId, audience_type: audienceType }),
 
   submitAnswer: (sessionKey: string, pairId: number, choice: 'left' | 'right' | 'real' | 'ai', responseTimeMs: number) =>
     api.post<AnswerResponse>(`/game/sessions/${sessionKey}/answer/`, {
@@ -146,24 +146,27 @@ export interface QuizAdmin {
   created_at: string;
 }
 
+export interface AudienceStats {
+  success_rate: number;
+  total_sessions: number;
+  total_answers: number;
+  correct_answers: number;
+}
+
 export interface DashboardStats {
   total_categories: number;
   total_pairs: number;
   total_quizzes: number;
   total_sessions: number;
   completed_sessions: number;
-  average_score: number;
+  school_stats: AudienceStats;
+  public_stats: AudienceStats;
   recent_sessions: {
     pseudo: string;
     score: number;
     streak_max: number;
+    audience_type: 'school' | 'public';
     created_at: string;
-  }[];
-  top_pairs: {
-    media_pair__id: number;
-    media_pair__category__name: string;
-    total_attempts: number;
-    correct_answers: number;
   }[];
 }
 
