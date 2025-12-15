@@ -2,6 +2,7 @@
 Serializers for the admin API.
 """
 from rest_framework import serializers
+from django.conf import settings
 from apps.game.models import Category, MediaPair, Quiz, QuizPair, GameSession, GlobalStats
 
 
@@ -19,6 +20,9 @@ class CategoryAdminSerializer(serializers.ModelSerializer):
 class MediaPairAdminSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     stats = serializers.SerializerMethodField()
+    real_media = serializers.SerializerMethodField()
+    ai_media = serializers.SerializerMethodField()
+    audio_media = serializers.SerializerMethodField()
 
     class Meta:
         model = MediaPair

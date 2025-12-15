@@ -5,6 +5,19 @@ from rest_framework import serializers
 from .models import Category, MediaPair, Quiz, GameSession, GameAnswer, GlobalStats
 
 
+def build_media_url(request, media_field):
+    """Construit une URL média via nginx (port 8080)."""
+    if not media_field:
+        return None
+    url = media_field.url
+    if url.startswith('/'):
+        scheme = request.scheme
+        host = request.get_host()
+        hostname = host.split(':')[0] if ':' in host else host
+        return f"{scheme}://{hostname}:8080{url}"
+    return url
+
+
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -33,8 +46,8 @@ class MediaPairGameSerializer(serializers.ModelSerializer):
         pos = positions.get(obj.id, 'left')
         
         if pos == 'left':
-            return request.build_absolute_uri(obj.real_media.url) if obj.real_media else None
-        return request.build_absolute_uri(obj.ai_media.url) if obj.ai_media else None
+            return build_media_url(request, obj.real_media)
+        return build_media_url(request, obj.ai_media)
 
     def get_right_media(self, obj):
         """For image/video: right media (real or AI depending on position)."""
@@ -45,15 +58,15 @@ class MediaPairGameSerializer(serializers.ModelSerializer):
         pos = positions.get(obj.id, 'left')
         
         if pos == 'right':
-            return request.build_absolute_uri(obj.real_media.url) if obj.real_media else None
-        return request.build_absolute_uri(obj.ai_media.url) if obj.ai_media else None
+            return build_media_url(request, obj.real_media)
+        return build_media_url(request, obj.ai_media)
 
     def get_audio_media(self, obj):
         """For audio: the audio file URL."""
         if obj.media_type != 'audio':
             return None
         request = self.context.get('request')
-        return request.build_absolute_uri(obj.audio_media.url) if obj.audio_media else None
+        return build_media_url(request, obj.audio_media)
 
     def get_is_real(self, obj):
         """For audio: whether it's real (only revealed after answer)."""

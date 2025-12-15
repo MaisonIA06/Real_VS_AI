@@ -1,8 +1,13 @@
 """
 Models for the Real vs AI game.
 """
+import os
 import uuid
 from django.db import models
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from django.conf import settings
+from django.utils.text import slugify
 
 
 class Category(models.Model):
@@ -18,6 +23,42 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_slug(self):
+        """Retourne un slug du nom de la catégorie pour les dossiers."""
+        return slugify(self.name)
+
+
+@receiver(post_save, sender=Category)
+def create_category_folders(sender, instance, created, **kwargs):
+    """Crée les dossiers pour la catégorie lors de sa création."""
+    if created:
+        category_slug = instance.get_slug()
+        folders = [
+            os.path.join(settings.MEDIA_ROOT, 'pairs', 'real', category_slug),
+            os.path.join(settings.MEDIA_ROOT, 'pairs', 'ai', category_slug),
+            os.path.join(settings.MEDIA_ROOT, 'pairs', 'audio', category_slug),
+        ]
+        for folder in folders:
+            os.makedirs(folder, exist_ok=True)
+
+
+def get_upload_path_real(instance, filename):
+    """Génère le chemin d'upload pour les médias réels."""
+    category_slug = instance.category.get_slug() if instance.category else 'uncategorized'
+    return f'pairs/real/{category_slug}/{filename}'
+
+
+def get_upload_path_ai(instance, filename):
+    """Génère le chemin d'upload pour les médias IA."""
+    category_slug = instance.category.get_slug() if instance.category else 'uncategorized'
+    return f'pairs/ai/{category_slug}/{filename}'
+
+
+def get_upload_path_audio(instance, filename):
+    """Génère le chemin d'upload pour les audios."""
+    category_slug = instance.category.get_slug() if instance.category else 'uncategorized'
+    return f'pairs/audio/{category_slug}/{filename}'
 
 
 class MediaPair(models.Model):
@@ -39,10 +80,10 @@ class MediaPair(models.Model):
         related_name='media_pairs'
     )
     # For image/video: both required. For audio: only audio_media and is_real
-    real_media = models.FileField(upload_to='pairs/real/', null=True, blank=True)
-    ai_media = models.FileField(upload_to='pairs/ai/', null=True, blank=True)
+    real_media = models.FileField(upload_to=get_upload_path_real, null=True, blank=True)
+    ai_media = models.FileField(upload_to=get_upload_path_ai, null=True, blank=True)
     # For audio type: single audio file
-    audio_media = models.FileField(upload_to='pairs/audio/', null=True, blank=True)
+    audio_media = models.FileField(upload_to=get_upload_path_audio, null=True, blank=True)
     # For audio: indicates if the audio is real (True) or AI-generated (False)
     is_real = models.BooleanField(
         null=True,
@@ -71,6 +112,22 @@ class MediaPair(models.Model):
 
     def __str__(self):
         return f"{self.category.name} - {self.media_type} #{self.id}"
+
+    def delete_media_files(self):
+        """Supprime les fichiers médias associés du disque."""
+        for field in [self.real_media, self.ai_media, self.audio_media]:
+            if field:
+                try:
+                    if os.path.isfile(field.path):
+                        os.remove(field.path)
+                except Exception:
+                    pass  # Ignorer les erreurs de suppression
+
+
+@receiver(post_delete, sender=MediaPair)
+def delete_media_files_on_delete(sender, instance, **kwargs):
+    """Signal pour supprimer les fichiers médias lorsqu'un MediaPair est supprimé."""
+    instance.delete_media_files()
 
 
 class Quiz(models.Model):
