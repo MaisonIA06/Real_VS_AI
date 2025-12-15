@@ -50,6 +50,7 @@ export default function AdminDashboard() {
       icon: FolderOpen,
       color: 'text-primary-400',
       bgColor: 'bg-primary-500/20',
+      link: '/admin/categories',
     },
     {
       title: 'Paires de médias',
@@ -57,6 +58,7 @@ export default function AdminDashboard() {
       icon: Image,
       color: 'text-accent-400',
       bgColor: 'bg-accent-500/20',
+      link: '/admin/pairs',
     },
     {
       title: 'Quiz',
@@ -64,6 +66,7 @@ export default function AdminDashboard() {
       icon: FileQuestion,
       color: 'text-orange-400',
       bgColor: 'bg-orange-500/20',
+      link: '/admin/quizzes',
     },
     {
       title: 'Sessions jouées',
@@ -71,6 +74,7 @@ export default function AdminDashboard() {
       icon: Users,
       color: 'text-green-400',
       bgColor: 'bg-green-500/20',
+      link: '/leaderboard',
     },
   ];
 
@@ -85,25 +89,34 @@ export default function AdminDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {statsCards.map((stat, index) => (
-            <motion.div
-              key={stat.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="card"
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl ${stat.bgColor} flex items-center justify-center`}>
-                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
+          {statsCards.map((stat, index) => {
+            const CardContent = (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className={`card ${stat.link ? 'cursor-pointer hover:bg-dark-700 transition-colors' : ''}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl ${stat.bgColor} flex items-center justify-center`}>
+                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold">{stat.value}</div>
+                    <div className="text-sm text-dark-400">{stat.title}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-3xl font-bold">{stat.value}</div>
-                  <div className="text-sm text-dark-400">{stat.title}</div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+
+            return stat.link ? (
+              <Link key={stat.title} to={stat.link}>
+                {CardContent}
+              </Link>
+            ) : (
+              <div key={stat.title}>{CardContent}</div>
+            );
+          })}
         </div>
 
         {/* Charts Row */}
