@@ -19,6 +19,8 @@ export default function HomePage() {
     setIsStarting(true);
     try {
       const response = await gameApi.startSession(quizId);
+      // Stocker les paires dans localStorage avant de naviguer
+      localStorage.setItem(`pairs_${response.data.session_key}`, JSON.stringify(response.data.pairs));
       navigate(`/game/${response.data.session_key}`);
     } catch (error) {
       console.error('Error starting game:', error);

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Flame, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Flame, Clock, CheckCircle, XCircle, Home } from 'lucide-react';
 import { gameApi, MediaPair, AnswerResponse } from '../services/api';
 import MediaDisplay from '../components/MediaDisplay';
 import AudioDisplay from '../components/AudioDisplay';
@@ -45,6 +45,16 @@ export default function GamePage() {
   }, [sessionKey, navigate]);
 
   const currentPair = pairs[currentIndex];
+
+  const handleQuit = useCallback(() => {
+    if (window.confirm('Êtes-vous sûr de vouloir quitter la partie ? Votre progression sera perdue.')) {
+      // Nettoyer le localStorage de la session
+      if (sessionKey) {
+        localStorage.removeItem(`pairs_${sessionKey}`);
+      }
+      navigate('/');
+    }
+  }, [sessionKey, navigate]);
 
   const handleAnswer = useCallback(
     async (choice: 'left' | 'right' | 'real' | 'ai') => {
@@ -110,6 +120,16 @@ export default function GamePage() {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-wrap items-center justify-between gap-4 mb-6"
       >
+        {/* Bouton Quitter - en haut à gauche */}
+        <button
+          onClick={handleQuit}
+          className="btn-secondary flex items-center gap-2 px-4 py-2 text-sm hover:bg-dark-700 transition-colors"
+          title="Quitter la partie"
+        >
+          <Home className="w-4 h-4" />
+          <span className="hidden sm:inline">Quitter</span>
+        </button>
+
         {/* Progress */}
         <div className="flex-1 min-w-[200px]">
           <div className="text-sm text-dark-400 mb-2">
