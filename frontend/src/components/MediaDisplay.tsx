@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Play } from 'lucide-react';
 
 interface MediaDisplayProps {
   src: string;
@@ -40,6 +40,14 @@ export default function MediaDisplay({
         {label}
       </div>
 
+      {/* Video indicator */}
+      {type === 'video' && (
+        <div className="absolute top-4 right-4 z-20 px-2 py-1 rounded-full bg-primary-500/80 backdrop-blur flex items-center gap-1 text-xs font-semibold">
+          <Play className="w-3 h-3" />
+          VIDÉO
+        </div>
+      )}
+
       {/* Media Content */}
       {type === 'image' ? (
         <img
@@ -56,6 +64,8 @@ export default function MediaDisplay({
           muted
           loop
           playsInline
+          preload="auto"
+          onError={(e) => console.error('Video load error:', src, e)}
         />
       )}
 
