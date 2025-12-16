@@ -75,6 +75,7 @@ export interface GameResult {
 }
 
 export interface LeaderboardEntry {
+  id: number;
   pseudo: string;
   score: number;
   streak_max: number;
@@ -162,6 +163,8 @@ export interface DashboardStats {
   school_stats: AudienceStats;
   public_stats: AudienceStats;
   recent_sessions: {
+    id: number;
+    session_key: string;
     pseudo: string;
     score: number;
     streak_max: number;
@@ -200,6 +203,9 @@ export const adminApi = {
 
   // Stats
   getStats: () => api.get<DashboardStats>('/admin/stats/'),
+
+  // Sessions
+  deleteSession: (sessionId: number) => api.delete(`/admin/sessions/${sessionId}/`),
 };
 
 export default api;

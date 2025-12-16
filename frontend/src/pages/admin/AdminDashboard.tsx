@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Image,
   FileQuestion,
@@ -8,16 +8,31 @@ import {
   Users,
   Trophy,
   GraduationCap,
+  Trash2,
 } from 'lucide-react';
-import { adminApi } from '../../services/api';
+import { adminApi, DashboardStats } from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
 
 
 export default function AdminDashboard() {
-  const { data: stats, isLoading } = useQuery({
+  const queryClient = useQueryClient();
+  const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ['admin-stats'],
     queryFn: () => adminApi.getStats().then((res) => res.data),
   });
+
+  const deleteSessionMutation = useMutation({
+    mutationFn: (sessionId: number) => adminApi.deleteSession(sessionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+    },
+  });
+
+  const handleDeleteSession = (sessionId: number, pseudo: string) => {
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer la session de "${pseudo}" ?`)) {
+      deleteSessionMutation.mutate(sessionId);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -187,6 +202,7 @@ export default function AdminDashboard() {
                     <th>Score</th>
                     <th>Streak Max</th>
                     <th>Date</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -206,6 +222,16 @@ export default function AdminDashboard() {
                       <td>{session.streak_max}</td>
                       <td className="text-dark-400">
                         {new Date(session.created_at).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td>
+                        <button
+                          onClick={() => handleDeleteSession(session.id, session.pseudo || 'Anonyme')}
+                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                          title="Supprimer cette session"
+                          disabled={deleteSessionMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}

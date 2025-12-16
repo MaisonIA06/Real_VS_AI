@@ -123,7 +123,7 @@ def dashboard_stats(request):
     recent_sessions = list(
         GameSession.objects.filter(is_completed=True)
         .order_by('-created_at')[:10]
-        .values('pseudo', 'score', 'streak_max', 'created_at', 'audience_type')
+        .values('id', 'session_key', 'pseudo', 'score', 'streak_max', 'created_at', 'audience_type')
     )
 
     stats = {
@@ -138,4 +138,18 @@ def dashboard_stats(request):
     }
 
     return Response(stats)
+
+
+@api_view(['DELETE'])
+def delete_session(request, session_id):
+    """Delete a game session."""
+    try:
+        session = GameSession.objects.get(id=session_id)
+        session.delete()
+        return Response({'message': 'Session supprimée avec succès'}, status=status.HTTP_200_OK)
+    except GameSession.DoesNotExist:
+        return Response(
+            {'error': 'Session non trouvée'},
+            status=status.HTTP_404_NOT_FOUND
+        )
 

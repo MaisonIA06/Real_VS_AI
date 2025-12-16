@@ -13,5 +13,6 @@ router.register(r'quizzes', views.QuizViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('stats/', views.dashboard_stats, name='dashboard-stats'),
+    path('sessions/<int:session_id>/', views.delete_session, name='delete-session'),
 ]
 

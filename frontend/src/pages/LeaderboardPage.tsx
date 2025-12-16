@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Trophy, Flame, Clock, Home, Medal } from 'lucide-react';
-import { gameApi, Quiz } from '../services/api';
+import { gameApi } from '../services/api';
 
 export default function LeaderboardPage() {
   const navigate = useNavigate();

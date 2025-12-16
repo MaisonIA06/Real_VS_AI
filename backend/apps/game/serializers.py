@@ -170,7 +170,7 @@ class LeaderboardEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GameSession
-        fields = ['pseudo', 'score', 'streak_max', 'time_total_ms', 'quiz_name', 'created_at']
+        fields = ['id', 'pseudo', 'score', 'streak_max', 'time_total_ms', 'quiz_name', 'created_at']
 
 
 class PseudoSubmitSerializer(serializers.Serializer):
