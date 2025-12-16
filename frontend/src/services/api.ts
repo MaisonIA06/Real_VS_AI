@@ -47,7 +47,7 @@ export interface GameSession {
 export interface AnswerResponse {
   is_correct: boolean;
   hint: string;
-  real_position: 'left' | 'right' | 'real' | 'ai';
+  ai_position: 'left' | 'right' | 'real' | 'ai';
   points_earned: number;
   current_streak: number;
   total_score: number;

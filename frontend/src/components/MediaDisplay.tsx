@@ -113,7 +113,7 @@ export default function MediaDisplay({
               : 'bg-red-500/90 text-white'
           }`}
         >
-          {isCorrect ? 'RÉEL' : 'IA'}
+          {isCorrect ? 'IA' : 'RÉEL'}
         </motion.div>
       )}
     </motion.div>

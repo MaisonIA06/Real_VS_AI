@@ -130,21 +130,24 @@ class AnswerSubmitView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Check if answer is correct
+        # Check if answer is correct (player must find the AI-generated media)
         if pair.media_type == 'audio':
             # For audio: choice is 'real' or 'ai', compare with pair.is_real
             is_correct = (
                 (choice == 'real' and pair.is_real is True) or
                 (choice == 'ai' and pair.is_real is False)
             )
-            real_position = 'real' if pair.is_real else 'ai'
+            ai_position = 'ai' if pair.is_real is False else 'real'
         else:
             # For image/video: use left/right positions
             positions = request.session.get(f'positions_{session.session_key}', {})
             # Convert string keys back to int if needed
             positions = {int(k): v for k, v in positions.items()}
             real_position = positions.get(pair_id, 'left')
-            is_correct = (choice == real_position)
+            # AI position is the opposite of real position
+            ai_position = 'right' if real_position == 'left' else 'left'
+            # Player wins if they find the AI (click on the AI image)
+            is_correct = (choice == ai_position)
 
         # Calculate points
         base_points = 100 if is_correct else 0
@@ -203,7 +206,7 @@ class AnswerSubmitView(APIView):
         response_data = {
             'is_correct': is_correct,
             'hint': pair.hint,
-            'real_position': real_position,
+            'ai_position': ai_position,
             'points_earned': points_earned,
             'current_streak': session.current_streak,
             'total_score': session.score,

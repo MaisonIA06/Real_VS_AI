@@ -68,7 +68,7 @@ export default function HomePage() {
           transition={{ delay: 0.4 }}
           className="text-xl md:text-2xl text-dark-300 mb-12"
         >
-          Saurez-vous distinguer le réel de l'intelligence artificielle ?
+          Saurez-vous repérer ce qui est généré par l'intelligence artificielle ?
         </motion.p>
 
         {/* Features */}

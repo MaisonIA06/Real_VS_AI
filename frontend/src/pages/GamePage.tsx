@@ -157,7 +157,7 @@ export default function GamePage() {
         <Timer 
           key={currentIndex} 
           duration={30} 
-          onTimeUp={() => handleAnswer(currentPair.media_type === 'audio' ? 'real' : 'left')} 
+          onTimeUp={() => handleAnswer(currentPair.media_type === 'audio' ? 'ai' : 'left')} 
         />
       </motion.div>
 
@@ -171,7 +171,7 @@ export default function GamePage() {
           {currentPair.media_type === 'audio' ? (
             <>Est-ce <span className="gradient-text">réel</span> ou <span className="gradient-text">IA</span> ?</>
           ) : (
-            <>Laquelle est <span className="gradient-text">réelle</span> ?</>
+            <>Laquelle est générée par <span className="gradient-text">IA</span> ?</>
           )}
         </motion.h2>
 
@@ -191,8 +191,8 @@ export default function GamePage() {
                   onAnswer={(choice) => handleAnswer(choice)}
                   disabled={isAnswering}
                   isCorrect={feedback?.is_correct}
-                  isReal={feedback?.real_position === 'real'}
-                  isSelected={feedback?.real_position !== undefined}
+                  isReal={feedback?.ai_position === 'real'}
+                  isSelected={feedback?.ai_position !== undefined}
                 />
               </motion.div>
             </AnimatePresence>
@@ -218,12 +218,12 @@ export default function GamePage() {
                   disabled={isAnswering}
                   isCorrect={
                     feedback
-                      ? feedback.real_position === 'left'
+                      ? feedback.ai_position === 'left'
                         ? true
                         : false
                       : undefined
                   }
-                  isSelected={feedback?.real_position !== undefined}
+                  isSelected={feedback?.ai_position !== undefined}
                 />
               </motion.div>
 
@@ -242,12 +242,12 @@ export default function GamePage() {
                   disabled={isAnswering}
                   isCorrect={
                     feedback
-                      ? feedback.real_position === 'right'
+                      ? feedback.ai_position === 'right'
                         ? true
                         : false
                       : undefined
                   }
-                  isSelected={feedback?.real_position !== undefined}
+                  isSelected={feedback?.ai_position !== undefined}
                 />
               </motion.div>
             </AnimatePresence>
