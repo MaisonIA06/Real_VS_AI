@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import confetti from 'canvas-confetti';
 import { Trophy, Flame, Clock, RotateCcw, Share2, Check, Home } from 'lucide-react';
 import { gameApi } from '../services/api';
+import LogoMIA from '../components/LogoMIA';
 
 export default function ResultPage() {
   const { sessionKey } = useParams<{ sessionKey: string }>();
@@ -102,6 +103,9 @@ export default function ResultPage() {
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-500/10 rounded-full blur-3xl" />
       </div>
+
+      {/* Logo MIA en bas à gauche */}
+      <LogoMIA size="medium" />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}

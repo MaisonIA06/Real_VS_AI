@@ -9,6 +9,7 @@ import AudioDisplay from '../components/AudioDisplay';
 import Timer from '../components/Timer';
 import ProgressBar from '../components/ProgressBar';
 import FeedbackOverlay from '../components/FeedbackOverlay';
+import LogoMIA from '../components/LogoMIA';
 
 export default function GamePage() {
   const { sessionKey } = useParams<{ sessionKey: string }>();
@@ -114,6 +115,9 @@ export default function GamePage() {
 
   return (
     <div className="min-h-screen flex flex-col p-4 md:p-8">
+      {/* Logo MIA en bas à gauche */}
+      <LogoMIA size="small" />
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}

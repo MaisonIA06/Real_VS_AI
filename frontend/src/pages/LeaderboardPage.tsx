@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Trophy, Flame, Clock, Home, Medal } from 'lucide-react';
 import { gameApi } from '../services/api';
+import LogoMIA from '../components/LogoMIA';
 
 export default function LeaderboardPage() {
   const navigate = useNavigate();
@@ -56,6 +57,9 @@ export default function LeaderboardPage() {
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-500/10 rounded-full blur-3xl" />
       </div>
+
+      {/* Logo MIA en bas à gauche */}
+      <LogoMIA size="medium" />
 
       <div className="relative z-10 max-w-4xl mx-auto">
         {/* Header */}
