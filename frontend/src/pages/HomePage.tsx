@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -8,11 +8,73 @@ import LogoMIA from '../components/LogoMIA';
 
 type AudienceType = 'school' | 'public';
 
+// Séquence secrète pour l'easter egg: defis(1) -> streak(3) -> classement(2)
+type SecretStep = 'defis' | 'streak' | 'classement';
+const SECRET_SEQUENCE: { step: SecretStep; count: number }[] = [
+  { step: 'defis', count: 1 },
+  { step: 'streak', count: 3 },
+  { step: 'classement', count: 2 },
+];
+
 export default function HomePage() {
   const navigate = useNavigate();
   const [isStarting, setIsStarting] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<number | null>(null);
   const [showAudienceModal, setShowAudienceModal] = useState(false);
+
+  // État pour la séquence secrète
+  const [secretProgress, setSecretProgress] = useState<{ currentStep: number; clickCount: number }>({
+    currentStep: 0,
+    clickCount: 0,
+  });
+  const [showSecretHint, setShowSecretHint] = useState(false);
+
+  // Reset la séquence après 5 secondes d'inactivité
+  useEffect(() => {
+    if (secretProgress.currentStep > 0 || secretProgress.clickCount > 0) {
+      const timer = setTimeout(() => {
+        setSecretProgress({ currentStep: 0, clickCount: 0 });
+        setShowSecretHint(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [secretProgress]);
+
+  // Gestion des clics secrets
+  const handleSecretClick = useCallback((step: SecretStep) => {
+    setSecretProgress((prev) => {
+      const expectedStep = SECRET_SEQUENCE[prev.currentStep];
+      
+      // Si on clique sur le bon élément de la séquence
+      if (expectedStep && expectedStep.step === step) {
+        const newClickCount = prev.clickCount + 1;
+        
+        // Si on a atteint le nombre de clics requis pour cette étape
+        if (newClickCount >= expectedStep.count) {
+          const nextStep = prev.currentStep + 1;
+          
+          // Séquence complète !
+          if (nextStep >= SECRET_SEQUENCE.length) {
+            // Animation subtile avant la redirection
+            setShowSecretHint(true);
+            setTimeout(() => {
+              navigate('/secret-quiz');
+            }, 800);
+            return { currentStep: 0, clickCount: 0 };
+          }
+          
+          // Passage à l'étape suivante
+          return { currentStep: nextStep, clickCount: 0 };
+        }
+        
+        // On incrémente le compteur de clics
+        return { currentStep: prev.currentStep, clickCount: newClickCount };
+      }
+      
+      // Mauvais clic, on reset
+      return { currentStep: 0, clickCount: 0 };
+    });
+  }, [navigate]);
 
   const { data: quizzes, isLoading } = useQuery({
     queryKey: ['quizzes'],
@@ -82,7 +144,10 @@ export default function HomePage() {
           transition={{ delay: 0.5 }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
         >
-          <div className="card flex flex-col items-center p-6">
+          <div 
+            className="card flex flex-col items-center p-6 cursor-pointer select-none transition-transform active:scale-95"
+            onClick={() => handleSecretClick('defis')}
+          >
             <div className="w-14 h-14 rounded-full bg-primary-500/20 flex items-center justify-center mb-4">
               <Zap className="w-7 h-7 text-primary-400" />
             </div>
@@ -90,7 +155,10 @@ export default function HomePage() {
             <p className="text-dark-400 text-sm">Testez votre perception sur 10 paires d'images ou vidéos</p>
           </div>
 
-          <div className="card flex flex-col items-center p-6">
+          <div 
+            className="card flex flex-col items-center p-6 cursor-pointer select-none transition-transform active:scale-95"
+            onClick={() => handleSecretClick('streak')}
+          >
             <div className="w-14 h-14 rounded-full bg-accent-500/20 flex items-center justify-center mb-4">
               <Trophy className="w-7 h-7 text-accent-400" />
             </div>
@@ -98,7 +166,10 @@ export default function HomePage() {
             <p className="text-dark-400 text-sm">Enchaînez les bonnes réponses pour des points bonus</p>
           </div>
 
-          <div className="card flex flex-col items-center p-6">
+          <div 
+            className="card flex flex-col items-center p-6 cursor-pointer select-none transition-transform active:scale-95"
+            onClick={() => handleSecretClick('classement')}
+          >
             <div className="w-14 h-14 rounded-full bg-orange-500/20 flex items-center justify-center mb-4">
               <Trophy className="w-7 h-7 text-orange-400" />
             </div>
@@ -106,6 +177,29 @@ export default function HomePage() {
             <p className="text-dark-400 text-sm">Comparez votre score avec les autres joueurs</p>
           </div>
         </motion.div>
+
+        {/* Indicateur subtil de la séquence secrète */}
+        <AnimatePresence>
+          {showSecretHint && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-dark-900/90 backdrop-blur-md"
+            >
+              <motion.div
+                animate={{ 
+                  rotate: [0, 360],
+                  scale: [1, 1.3, 1]
+                }}
+                transition={{ duration: 0.8 }}
+                className="text-8xl"
+              >
+                🔮
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Quiz Selection */}
         {!isLoading && quizzes && quizzes.length > 0 && (

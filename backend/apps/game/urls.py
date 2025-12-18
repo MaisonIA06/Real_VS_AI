@@ -10,5 +10,6 @@ urlpatterns = [
     path('sessions/<uuid:session_key>/answer/', views.AnswerSubmitView.as_view(), name='answer-submit'),
     path('sessions/<uuid:session_key>/result/', views.GameResultView.as_view(), name='game-result'),
     path('leaderboard/', views.LeaderboardView.as_view(), name='leaderboard'),
+    path('secret-quiz/', views.SecretQuizView.as_view(), name='secret-quiz'),
 ]
 

@@ -108,7 +108,30 @@ export const gameApi = {
     api.get<LeaderboardEntry[]>('/game/leaderboard/', {
       params: { quiz_id: quizId, limit },
     }),
+
+  // Secret Quiz (Easter Egg)
+  getSecretQuiz: () => api.get<SecretQuizData>('/game/secret-quiz/'),
 };
+
+// Types for Secret Quiz
+export interface SecretQuizAuthor {
+  id: number;
+  name: string;
+  image: string;
+}
+
+export interface SecretQuizQuestion {
+  id: number;
+  quote: string;
+  hint: string;
+  correct_author_id: number;
+}
+
+export interface SecretQuizData {
+  questions: SecretQuizQuestion[];
+  authors: SecretQuizAuthor[];
+  total_questions: number;
+}
 
 // Admin API
 export interface MediaPairAdmin {
@@ -206,7 +229,33 @@ export const adminApi = {
 
   // Sessions
   deleteSession: (sessionId: number) => api.delete(`/admin/sessions/${sessionId}/`),
+
+  // Secret Quotes (Easter Egg)
+  getSecretQuotes: (params?: { is_active?: boolean }) =>
+    api.get<SecretQuoteAdmin[]>('/admin/secret-quotes/', { params }),
+  createSecretQuote: (formData: FormData) =>
+    api.post<SecretQuoteAdmin>('/admin/secret-quotes/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  updateSecretQuote: (id: number, formData: FormData) =>
+    api.patch<SecretQuoteAdmin>(`/admin/secret-quotes/${id}/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  deleteSecretQuote: (id: number) => api.delete(`/admin/secret-quotes/${id}/`),
 };
+
+// Types for Secret Quotes Admin
+export interface SecretQuoteAdmin {
+  id: number;
+  quote: string;
+  hint: string;
+  author_name: string;
+  author_image: string;
+  is_active: boolean;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
 
 export default api;
 
