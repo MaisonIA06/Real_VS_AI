@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Quiz, MediaPair, GameSession, GameAnswer, GlobalStats
+from .models import Quiz, MediaPair, GameSession, GameAnswer, GlobalStats, SecretQuote
 from .serializers import (
     QuizListSerializer,
     GameSessionCreateSerializer,
@@ -273,4 +273,64 @@ class LeaderboardView(APIView):
 
         serializer = LeaderboardEntrySerializer(sessions, many=True)
         return Response(serializer.data)
+
+
+class SecretQuizView(APIView):
+    """Get secret quiz data (citations with shuffled authors)."""
+
+    def get(self, request):
+        """Return active quotes with unique authors (no duplicates)."""
+        quotes = SecretQuote.objects.filter(is_active=True).order_by('order', 'id')
+        
+        if not quotes.exists():
+            return Response({'error': 'Aucune citation disponible'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Build questions list and collect unique authors
+        questions = []
+        unique_authors = {}  # key: author_name (lowercase), value: author data
+        author_name_to_id = {}  # Mapping author_name -> unique author ID
+        
+        for quote in quotes:
+            # Build image URL
+            image_url = None
+            if quote.author_image:
+                url = quote.author_image.url
+                if url.startswith('/'):
+                    scheme = request.scheme
+                    host = request.get_host()
+                    hostname = host.split(':')[0] if ':' in host else host
+                    image_url = f"{scheme}://{hostname}:8080{url}"
+                else:
+                    image_url = url
+            
+            # Normalize author name for deduplication
+            author_key = quote.author_name.strip().lower()
+            
+            # Only add author if not already present
+            if author_key not in unique_authors:
+                author_id = len(unique_authors) + 1  # Generate unique ID
+                unique_authors[author_key] = {
+                    'id': author_id,
+                    'name': quote.author_name,
+                    'image': image_url,
+                }
+                author_name_to_id[author_key] = author_id
+            
+            # Add question with reference to unique author ID
+            questions.append({
+                'id': quote.id,
+                'quote': quote.quote,
+                'hint': quote.hint,
+                'correct_author_id': author_name_to_id[author_key],
+            })
+        
+        # Convert unique authors dict to list and shuffle
+        authors_list = list(unique_authors.values())
+        random.shuffle(authors_list)
+        
+        return Response({
+            'questions': questions,
+            'authors': authors_list,
+            'total_questions': len(questions),
+        })
 
