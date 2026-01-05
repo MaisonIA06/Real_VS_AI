@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Quiz, MediaPair, GameSession, GameAnswer, GlobalStats, SecretQuote
+from .models import Quiz, MediaPair, GameSession, GameAnswer, GlobalStats, SecretQuote, MultiplayerRoom
 from .serializers import (
     QuizListSerializer,
     GameSessionCreateSerializer,
@@ -333,4 +333,104 @@ class SecretQuizView(APIView):
             'authors': authors_list,
             'total_questions': len(questions),
         })
+
+
+# =============================================================================
+# Multiplayer / Live Mode Views
+# =============================================================================
+
+class MultiplayerRoomCreateView(APIView):
+    """Create a new multiplayer room."""
+
+    def post(self, request):
+        quiz_id = request.data.get('quiz_id')
+        quiz = None
+
+        if quiz_id:
+            try:
+                quiz = Quiz.objects.get(id=quiz_id, is_active=True)
+            except Quiz.DoesNotExist:
+                return Response(
+                    {'error': 'Quiz non trouvé'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        # Create room
+        room = MultiplayerRoom.objects.create(quiz=quiz)
+
+        return Response({
+            'id': room.id,
+            'room_code': room.room_code,
+            'quiz': {
+                'id': quiz.id,
+                'name': quiz.name,
+            } if quiz else None,
+            'status': room.status,
+            'created_at': room.created_at.isoformat(),
+        }, status=status.HTTP_201_CREATED)
+
+
+class MultiplayerRoomDetailView(APIView):
+    """Get multiplayer room details."""
+
+    def get(self, request, room_code):
+        room_code = room_code.upper()
+        try:
+            room = MultiplayerRoom.objects.get(room_code=room_code)
+        except MultiplayerRoom.DoesNotExist:
+            return Response(
+                {'error': 'Room non trouvée'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response({
+            'id': room.id,
+            'room_code': room.room_code,
+            'quiz': {
+                'id': room.quiz.id,
+                'name': room.quiz.name,
+            } if room.quiz else None,
+            'status': room.status,
+            'players_count': room.players.filter(is_connected=True).count(),
+            'created_at': room.created_at.isoformat(),
+        })
+
+
+class LocalIPView(APIView):
+    """Get the local IP address of the server for QR code generation."""
+
+    def get(self, request):
+        import socket
+        
+        # Méthode 1: Utiliser X-Forwarded-Host (l'IP/hostname utilisé par le client)
+        # C'est la meilleure option car c'est l'adresse que l'enseignant utilise déjà
+        forwarded_host = request.META.get('HTTP_X_FORWARDED_HOST', '')
+        if forwarded_host:
+            host_ip = forwarded_host.split(':')[0]
+            if host_ip and host_ip not in ('localhost', '127.0.0.1'):
+                return Response({'ip': host_ip})
+        
+        # Méthode 2: Utiliser le Host header
+        host = request.get_host()
+        if host:
+            host_ip = host.split(':')[0]
+            if host_ip and host_ip not in ('localhost', '127.0.0.1'):
+                return Response({'ip': host_ip})
+        
+        # Méthode 3: Fallback - détection via socket (utile en développement local)
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.settimeout(0)
+            try:
+                # Connect to a public IP to determine local interface
+                s.connect(('8.8.8.8', 80))
+                ip = s.getsockname()[0]
+            except Exception:
+                ip = '127.0.0.1'
+            finally:
+                s.close()
+        except Exception:
+            ip = '127.0.0.1'
+        
+        return Response({'ip': ip})
 

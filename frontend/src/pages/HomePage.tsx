@@ -267,12 +267,28 @@ export default function HomePage() {
           </button>
         </motion.div>
 
+        {/* Multiplayer Mode Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="mt-8"
+        >
+          <button
+            onClick={() => navigate('/multiplayer/host')}
+            className="btn-secondary inline-flex items-center gap-3 text-lg"
+          >
+            <Users className="w-5 h-5" />
+            Mode Classe
+          </button>
+        </motion.div>
+
         {/* Leaderboard link */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="mt-8"
+          transition={{ delay: 0.9 }}
+          className="mt-6"
         >
           <button
             onClick={() => navigate('/leaderboard')}

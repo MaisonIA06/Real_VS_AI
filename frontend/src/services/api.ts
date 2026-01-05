@@ -1,13 +1,31 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+// Utiliser une URL relative pour que l'API fonctionne depuis n'importe quel appareil
+// (tablettes, téléphones, etc. sur le réseau local)
+const getApiUrl = () => {
+  // Si une URL est définie explicitement, l'utiliser
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // Sinon, construire l'URL à partir de l'hôte actuel
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+  const port = '8080'; // Port nginx
+  
+  return `${protocol}//${hostname}:${port}/api`;
+};
+
+const API_URL = getApiUrl();
 
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
+  // Note: withCredentials désactivé car non nécessaire pour ce jeu
+  // et peut causer des problèmes CORS sur les navigateurs mobiles (Safari/Chrome iOS)
+  withCredentials: false,
 });
 
 // Types
@@ -111,7 +129,26 @@ export const gameApi = {
 
   // Secret Quiz (Easter Egg)
   getSecretQuiz: () => api.get<SecretQuizData>('/game/secret-quiz/'),
+
+  // Multiplayer / Live Mode
+  createMultiplayerRoom: (quizId?: number) =>
+    api.post<MultiplayerRoom>('/game/multiplayer/rooms/', { quiz_id: quizId }),
+
+  getMultiplayerRoom: (roomCode: string) =>
+    api.get<MultiplayerRoom>(`/game/multiplayer/rooms/${roomCode}/`),
+
+  getLocalIP: () =>
+    api.get<{ ip: string }>('/game/local-ip/'),
 };
+
+// Types for Multiplayer
+export interface MultiplayerRoom {
+  id: number;
+  room_code: string;
+  quiz?: Quiz;
+  status: 'waiting' | 'playing' | 'showing_answer' | 'finished';
+  created_at: string;
+}
 
 // Types for Secret Quiz
 export interface SecretQuizAuthor {
