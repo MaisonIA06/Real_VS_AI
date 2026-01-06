@@ -5,8 +5,6 @@ import {
   Image,
   FolderOpen,
   Home,
-  Settings,
-  Sparkles,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -17,7 +15,6 @@ const navItems = [
   { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/admin/categories', icon: FolderOpen, label: 'Catégories' },
   { path: '/admin/pairs', icon: Image, label: 'Paires de médias' },
-  { path: '/admin/secret-quotes', icon: Sparkles, label: 'Quiz Secret', special: true },
 ];
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
@@ -44,28 +41,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <nav className="flex-1 p-4 space-y-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
-            const isSpecial = 'special' in item && item.special;
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                   isActive
-                    ? isSpecial
-                      ? 'bg-amber-500/20 text-amber-400'
-                      : 'bg-primary-500/20 text-primary-400'
-                    : isSpecial
-                    ? 'text-amber-400/60 hover:bg-amber-500/10 hover:text-amber-400'
+                    ? 'bg-primary-500/20 text-primary-400'
                     : 'text-dark-400 hover:bg-dark-800 hover:text-white'
                 }`}
               >
                 <item.icon className="w-5 h-5" />
                 <span className="font-medium">{item.label}</span>
-                {isSpecial && (
-                  <span className="ml-auto text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
-                    🔮
-                  </span>
-                )}
               </Link>
             );
           })}
@@ -90,4 +77,3 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     </div>
   );
 }
-

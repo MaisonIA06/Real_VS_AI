@@ -93,10 +93,8 @@ export interface LeaderboardEntry {
 
 // Game API
 export const gameApi = {
-  getQuizzes: () => api.get<Quiz[]>('/game/quizzes/'),
-
-  startSession: (quizId?: number, audienceType: 'school' | 'public' = 'public') =>
-    api.post<GameSession>('/game/sessions/', { quiz_id: quizId, audience_type: audienceType }),
+  startSession: (audienceType: 'school' | 'public' = 'public') =>
+    api.post<GameSession>('/game/sessions/', { audience_type: audienceType }),
 
   submitAnswer: (sessionKey: string, pairId: number, choice: 'left' | 'right' | 'real' | 'ai', responseTimeMs: number) =>
     api.post<AnswerResponse>(`/game/sessions/${sessionKey}/answer/`, {
@@ -111,17 +109,14 @@ export const gameApi = {
   submitPseudo: (sessionKey: string, pseudo: string) =>
     api.post(`/game/sessions/${sessionKey}/result/`, { pseudo }),
 
-  getLeaderboard: (quizId?: number, limit = 10) =>
+  getLeaderboard: (limit = 10) =>
     api.get<LeaderboardEntry[]>('/game/leaderboard/', {
-      params: { quiz_id: quizId, limit },
+      params: { limit },
     }),
 
-  // Secret Quiz (Easter Egg)
-  getSecretQuiz: () => api.get<SecretQuizData>('/game/secret-quiz/'),
-
   // Multiplayer / Live Mode
-  createMultiplayerRoom: (quizId?: number) =>
-    api.post<MultiplayerRoom>('/game/multiplayer/rooms/', { quiz_id: quizId }),
+  createMultiplayerRoom: () =>
+    api.post<MultiplayerRoom>('/game/multiplayer/rooms/', {}),
 
   getMultiplayerRoom: (roomCode: string) =>
     api.get<MultiplayerRoom>(`/game/multiplayer/rooms/${roomCode}/`),
@@ -134,29 +129,8 @@ export const gameApi = {
 export interface MultiplayerRoom {
   id: number;
   room_code: string;
-  quiz?: Quiz;
   status: 'waiting' | 'playing' | 'showing_answer' | 'finished';
   created_at: string;
-}
-
-// Types for Secret Quiz
-export interface SecretQuizAuthor {
-  id: number;
-  name: string;
-  image: string;
-}
-
-export interface SecretQuizQuestion {
-  id: number;
-  quote: string;
-  hint: string;
-  correct_author_id: number;
-}
-
-export interface SecretQuizData {
-  questions: SecretQuizQuestion[];
-  authors: SecretQuizAuthor[];
-  total_questions: number;
 }
 
 // Admin API
@@ -230,33 +204,6 @@ export const adminApi = {
 
   // Sessions
   deleteSession: (sessionId: number) => api.delete(`/admin/sessions/${sessionId}/`),
-
-  // Secret Quotes (Easter Egg)
-  getSecretQuotes: (params?: { is_active?: boolean }) =>
-    api.get<SecretQuoteAdmin[]>('/admin/secret-quotes/', { params }),
-  createSecretQuote: (formData: FormData) =>
-    api.post<SecretQuoteAdmin>('/admin/secret-quotes/', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  updateSecretQuote: (id: number, formData: FormData) =>
-    api.patch<SecretQuoteAdmin>(`/admin/secret-quotes/${id}/`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  deleteSecretQuote: (id: number) => api.delete(`/admin/secret-quotes/${id}/`),
 };
 
-// Types for Secret Quotes Admin
-export interface SecretQuoteAdmin {
-  id: number;
-  quote: string;
-  hint: string;
-  author_name: string;
-  author_image: string;
-  is_active: boolean;
-  order: number;
-  created_at: string;
-  updated_at: string;
-}
-
 export default api;
-

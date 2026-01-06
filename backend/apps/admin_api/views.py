@@ -7,14 +7,12 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from apps.game.models import Category, MediaPair, GameSession, GlobalStats, SecretQuote
+from apps.game.models import Category, MediaPair, GameSession, GlobalStats
 from .serializers import (
     CategoryAdminSerializer,
     MediaPairAdminSerializer,
     MediaPairCreateSerializer,
     DashboardStatsSerializer,
-    SecretQuoteAdminSerializer,
-    SecretQuoteCreateSerializer,
 )
 
 
@@ -64,33 +62,6 @@ class MediaPairViewSet(viewsets.ModelViewSet):
         if is_active is not None:
             queryset = queryset.filter(is_active=is_active.lower() == 'true')
 
-        return queryset
-
-
-class SecretQuoteViewSet(viewsets.ModelViewSet):
-    """CRUD operations for secret quotes (Easter Egg quiz)."""
-    queryset = SecretQuote.objects.all()
-    parser_classes = [MultiPartParser, FormParser]
-
-    def get_serializer_class(self):
-        if self.action in ['create', 'update', 'partial_update']:
-            return SecretQuoteCreateSerializer
-        return SecretQuoteAdminSerializer
-
-    def get_serializer_context(self):
-        """Add request to serializer context for building absolute URLs."""
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        
-        # Filter by active status
-        is_active = self.request.query_params.get('is_active')
-        if is_active is not None:
-            queryset = queryset.filter(is_active=is_active.lower() == 'true')
-        
         return queryset
 
 

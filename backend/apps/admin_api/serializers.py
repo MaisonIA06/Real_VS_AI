@@ -3,7 +3,7 @@ Serializers for the admin API.
 """
 from rest_framework import serializers
 from django.conf import settings
-from apps.game.models import Category, MediaPair, GameSession, GlobalStats, SecretQuote
+from apps.game.models import Category, MediaPair, GameSession, GlobalStats
 
 
 class CategoryAdminSerializer(serializers.ModelSerializer):
@@ -105,37 +105,4 @@ class DashboardStatsSerializer(serializers.Serializer):
     average_score = serializers.FloatField()
     recent_sessions = serializers.ListField()
     top_pairs = serializers.ListField()
-
-
-class SecretQuoteAdminSerializer(serializers.ModelSerializer):
-    """Serializer for secret quotes in admin."""
-    author_image = serializers.SerializerMethodField()
-
-    class Meta:
-        model = SecretQuote
-        fields = [
-            'id', 'quote', 'hint', 'author_name', 'author_image',
-            'is_active', 'order', 'created_at', 'updated_at'
-        ]
-
-    def get_author_image(self, obj):
-        if obj.author_image:
-            request = self.context.get('request')
-            if request:
-                url = obj.author_image.url
-                if url.startswith('/'):
-                    scheme = request.scheme
-                    host = request.get_host()
-                    hostname = host.split(':')[0] if ':' in host else host
-                    return f"{scheme}://{hostname}:8080{url}"
-                return url
-            return obj.author_image.url if obj.author_image else None
-        return None
-
-
-class SecretQuoteCreateSerializer(serializers.ModelSerializer):
-    """Serializer for creating/updating secret quotes."""
-    class Meta:
-        model = SecretQuote
-        fields = ['quote', 'hint', 'author_name', 'author_image', 'is_active', 'order']
 

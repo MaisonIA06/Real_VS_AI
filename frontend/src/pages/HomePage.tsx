@@ -8,77 +8,43 @@ import LogoMIA from '../components/LogoMIA';
 
 type AudienceType = 'school' | 'public';
 
-// Séquence secrète pour l'easter egg: defis(1) -> streak(3) -> classement(2)
-type SecretStep = 'defis' | 'streak' | 'classement';
-const SECRET_SEQUENCE: { step: SecretStep; count: number }[] = [
-  { step: 'defis', count: 1 },
-  { step: 'streak', count: 3 },
-  { step: 'classement', count: 2 },
-];
-
 export default function HomePage() {
   const navigate = useNavigate();
   const [isStarting, setIsStarting] = useState(false);
   const [showAudienceModal, setShowAudienceModal] = useState(false);
 
-  // État pour la séquence secrète
-  const [secretProgress, setSecretProgress] = useState<{ currentStep: number; clickCount: number }>({
-    currentStep: 0,
-    clickCount: 0,
-  });
-  const [showSecretHint, setShowSecretHint] = useState(false);
+  // État pour le nouvel Easter Egg (Le Musée des Hallucinations)
+  const [vsClickCount, setVsClickCount] = useState(0);
+  const [showMuseumHint, setShowMuseumHint] = useState(false);
 
-  // Reset la séquence après 5 secondes d'inactivité
+  // Reset le compteur après 3 secondes d'inactivité
   useEffect(() => {
-    if (secretProgress.currentStep > 0 || secretProgress.clickCount > 0) {
+    if (vsClickCount > 0) {
       const timer = setTimeout(() => {
-        setSecretProgress({ currentStep: 0, clickCount: 0 });
-        setShowSecretHint(false);
-      }, 5000);
+        setVsClickCount(0);
+      }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [secretProgress]);
+  }, [vsClickCount]);
 
-  // Gestion des clics secrets
-  const handleSecretClick = useCallback((step: SecretStep) => {
-    setSecretProgress((prev) => {
-      const expectedStep = SECRET_SEQUENCE[prev.currentStep];
-      
-      // Si on clique sur le bon élément de la séquence
-      if (expectedStep && expectedStep.step === step) {
-        const newClickCount = prev.clickCount + 1;
-        
-        // Si on a atteint le nombre de clics requis pour cette étape
-        if (newClickCount >= expectedStep.count) {
-          const nextStep = prev.currentStep + 1;
-          
-          // Séquence complète !
-          if (nextStep >= SECRET_SEQUENCE.length) {
-            // Animation subtile avant la redirection
-            setShowSecretHint(true);
-            setTimeout(() => {
-              navigate('/secret-quiz');
-            }, 800);
-            return { currentStep: 0, clickCount: 0 };
-          }
-          
-          // Passage à l'étape suivante
-          return { currentStep: nextStep, clickCount: 0 };
-        }
-        
-        // On incrémente le compteur de clics
-        return { currentStep: prev.currentStep, clickCount: newClickCount };
+  const handleVsClick = useCallback(() => {
+    setVsClickCount((prev) => {
+      const newCount = prev + 1;
+      if (newCount >= 5) {
+        setShowMuseumHint(true);
+        setTimeout(() => {
+          navigate('/museum');
+        }, 1000);
+        return 0;
       }
-      
-      // Mauvais clic, on reset
-      return { currentStep: 0, clickCount: 0 };
+      return newCount;
     });
   }, [navigate]);
 
   const { data: quizzes, isLoading } = useQuery({
     queryKey: ['quizzes'],
-    queryFn: () => gameApi.getQuizzes().then((res) => res.data),
-    enabled: false, // On désactive la récupération des quiz car la fonctionnalité est retirée
+    queryFn: () => gameApi.getLeaderboard().then(() => []), // Dummy call to keep the hook happy if needed
+    enabled: false,
   });
 
   const handleStartClick = () => {
@@ -89,7 +55,7 @@ export default function HomePage() {
     setShowAudienceModal(false);
     setIsStarting(true);
     try {
-      const response = await gameApi.startSession(undefined, audienceType); // Toujours undefined pour le quizId
+      const response = await gameApi.startSession(audienceType);
       // Stocker les paires dans localStorage avant de naviguer
       localStorage.setItem(`pairs_${response.data.session_key}`, JSON.stringify(response.data.pairs));
       navigate(`/game/${response.data.session_key}`);
@@ -121,10 +87,15 @@ export default function HomePage() {
           initial={{ scale: 0.9 }}
           animate={{ scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="font-display text-6xl md:text-8xl font-bold mb-6"
+          className="font-display text-6xl md:text-8xl font-bold mb-6 select-none"
         >
           <span className="gradient-text">Real</span>
-          <span className="text-dark-300"> vs </span>
+          <span 
+            className="text-dark-300 cursor-default px-2 transition-colors active:text-primary-500"
+            onClick={handleVsClick}
+          >
+            vs
+          </span>
           <span className="gradient-text">AI</span>
         </motion.h1>
 
@@ -144,10 +115,7 @@ export default function HomePage() {
           transition={{ delay: 0.5 }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
         >
-          <div 
-            className="card flex flex-col items-center p-6 cursor-pointer select-none transition-transform active:scale-95"
-            onClick={() => handleSecretClick('defis')}
-          >
+          <div className="card flex flex-col items-center p-6 transition-transform hover:scale-105">
             <div className="w-14 h-14 rounded-full bg-primary-500/20 flex items-center justify-center mb-4">
               <Zap className="w-7 h-7 text-primary-400" />
             </div>
@@ -155,10 +123,7 @@ export default function HomePage() {
             <p className="text-dark-400 text-sm">Testez votre perception sur 10 paires d'images ou vidéos</p>
           </div>
 
-          <div 
-            className="card flex flex-col items-center p-6 cursor-pointer select-none transition-transform active:scale-95"
-            onClick={() => handleSecretClick('streak')}
-          >
+          <div className="card flex flex-col items-center p-6 transition-transform hover:scale-105">
             <div className="w-14 h-14 rounded-full bg-accent-500/20 flex items-center justify-center mb-4">
               <Trophy className="w-7 h-7 text-accent-400" />
             </div>
@@ -166,10 +131,7 @@ export default function HomePage() {
             <p className="text-dark-400 text-sm">Enchaînez les bonnes réponses pour des points bonus</p>
           </div>
 
-          <div 
-            className="card flex flex-col items-center p-6 cursor-pointer select-none transition-transform active:scale-95"
-            onClick={() => handleSecretClick('classement')}
-          >
+          <div className="card flex flex-col items-center p-6 transition-transform hover:scale-105">
             <div className="w-14 h-14 rounded-full bg-orange-500/20 flex items-center justify-center mb-4">
               <Trophy className="w-7 h-7 text-orange-400" />
             </div>
@@ -178,24 +140,22 @@ export default function HomePage() {
           </div>
         </motion.div>
 
-        {/* Indicateur subtil de la séquence secrète */}
+        {/* Indicateur subtil du Musée */}
         <AnimatePresence>
-          {showSecretHint && (
+          {showMuseumHint && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-dark-900/90 backdrop-blur-md"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-dark-950/90 backdrop-blur-xl"
             >
               <motion.div
-                animate={{ 
-                  rotate: [0, 360],
-                  scale: [1, 1.3, 1]
-                }}
-                transition={{ duration: 0.8 }}
-                className="text-8xl"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="text-center"
               >
-                🔮
+                <div className="text-6xl mb-4">🏛️</div>
+                <h2 className="text-3xl font-display font-bold gradient-text">Entrée du Musée...</h2>
               </motion.div>
             </motion.div>
           )}
@@ -330,4 +290,3 @@ export default function HomePage() {
     </div>
   );
 }
-

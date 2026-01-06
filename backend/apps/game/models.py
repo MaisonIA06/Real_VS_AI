@@ -61,6 +61,11 @@ def get_upload_path_audio(instance, filename):
     return f'pairs/audio/{category_slug}/{filename}'
 
 
+def get_upload_path_celebrity(instance, filename):
+    """Génère le chemin d'upload pour les photos de célébrités (Secret Quiz)."""
+    return f'celebrities/{filename}'
+
+
 class MediaPair(models.Model):
     """A pair of media: one real, one AI-generated. Or a single audio file."""
     
@@ -208,61 +213,6 @@ class GlobalStats(models.Model):
         if self.total_attempts == 0:
             return 0
         return round((self.correct_answers / self.total_attempts) * 100, 1)
-
-
-def get_upload_path_celebrity(instance, filename):
-    """Génère le chemin d'upload pour les images de célébrités."""
-    return f'secret_quiz/celebrities/{filename}'
-
-
-class SecretQuote(models.Model):
-    """Citation mystère pour le quiz secret (Easter Egg)."""
-    quote = models.TextField(
-        help_text="La citation à deviner"
-    )
-    hint = models.CharField(
-        max_length=200,
-        blank=True,
-        help_text="Indice optionnel pour aider le joueur"
-    )
-    author_name = models.CharField(
-        max_length=100,
-        help_text="Nom de l'auteur de la citation"
-    )
-    author_image = models.ImageField(
-        upload_to=get_upload_path_celebrity,
-        help_text="Photo de l'auteur"
-    )
-    is_active = models.BooleanField(default=True)
-    order = models.PositiveIntegerField(
-        default=0,
-        help_text="Ordre d'affichage dans le quiz"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['order', '-created_at']
-        verbose_name = "Citation secrète"
-        verbose_name_plural = "Citations secrètes"
-
-    def __str__(self):
-        return f'"{self.quote[:50]}..." - {self.author_name}'
-
-    def delete_image_file(self):
-        """Supprime le fichier image associé du disque."""
-        if self.author_image:
-            try:
-                if os.path.isfile(self.author_image.path):
-                    os.remove(self.author_image.path)
-            except Exception:
-                pass
-
-
-@receiver(post_delete, sender=SecretQuote)
-def delete_celebrity_image_on_delete(sender, instance, **kwargs):
-    """Signal pour supprimer l'image lorsqu'une citation est supprimée."""
-    instance.delete_image_file()
 
 
 # =============================================================================
