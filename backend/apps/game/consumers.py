@@ -490,12 +490,9 @@ class MultiplayerConsumer(AsyncWebsocketConsumer):
         """Start the game and prepare questions."""
         room = MultiplayerRoom.objects.get(room_code=self.room_code)
         
-        # Get pairs for the game
-        if room.quiz and not room.quiz.is_random:
-            pairs = list(room.quiz.pairs.filter(is_active=True).order_by('quizpair__order')[:10])
-        else:
-            all_pairs = list(MediaPair.objects.filter(is_active=True))
-            pairs = random.sample(all_pairs, min(10, len(all_pairs)))
+        # Get 10 random pairs
+        all_pairs = list(MediaPair.objects.filter(is_active=True))
+        pairs = random.sample(all_pairs, min(10, len(all_pairs)))
         
         room.pairs.set(pairs)
         

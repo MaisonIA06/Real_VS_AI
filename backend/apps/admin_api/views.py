@@ -7,16 +7,12 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from apps.game.models import Category, MediaPair, Quiz, GameSession, GlobalStats, SecretQuote
+from apps.game.models import Category, MediaPair, GameSession, GlobalStats
 from .serializers import (
     CategoryAdminSerializer,
     MediaPairAdminSerializer,
     MediaPairCreateSerializer,
-    QuizAdminSerializer,
-    QuizCreateSerializer,
     DashboardStatsSerializer,
-    SecretQuoteAdminSerializer,
-    SecretQuoteCreateSerializer,
 )
 
 
@@ -69,43 +65,6 @@ class MediaPairViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class QuizViewSet(viewsets.ModelViewSet):
-    """CRUD operations for quizzes."""
-    queryset = Quiz.objects.prefetch_related('pairs', 'quizpair_set').all()
-
-    def get_serializer_class(self):
-        if self.action in ['create', 'update', 'partial_update']:
-            return QuizCreateSerializer
-        return QuizAdminSerializer
-
-
-class SecretQuoteViewSet(viewsets.ModelViewSet):
-    """CRUD operations for secret quotes (Easter Egg quiz)."""
-    queryset = SecretQuote.objects.all()
-    parser_classes = [MultiPartParser, FormParser]
-
-    def get_serializer_class(self):
-        if self.action in ['create', 'update', 'partial_update']:
-            return SecretQuoteCreateSerializer
-        return SecretQuoteAdminSerializer
-
-    def get_serializer_context(self):
-        """Add request to serializer context for building absolute URLs."""
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        
-        # Filter by active status
-        is_active = self.request.query_params.get('is_active')
-        if is_active is not None:
-            queryset = queryset.filter(is_active=is_active.lower() == 'true')
-        
-        return queryset
-
-
 @api_view(['GET'])
 def dashboard_stats(request):
     """Get dashboard statistics."""
@@ -113,7 +72,6 @@ def dashboard_stats(request):
     
     total_categories = Category.objects.count()
     total_pairs = MediaPair.objects.count()
-    total_quizzes = Quiz.objects.count()
     total_sessions = GameSession.objects.count()
     completed_sessions = GameSession.objects.filter(is_completed=True).count()
 
@@ -158,7 +116,6 @@ def dashboard_stats(request):
     stats = {
         'total_categories': total_categories,
         'total_pairs': total_pairs,
-        'total_quizzes': total_quizzes,
         'total_sessions': total_sessions,
         'completed_sessions': completed_sessions,
         'school_stats': school_stats,
@@ -181,4 +138,3 @@ def delete_session(request, session_id):
             {'error': 'Session non trouvée'},
             status=status.HTTP_404_NOT_FOUND
         )
-

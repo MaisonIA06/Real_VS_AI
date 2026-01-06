@@ -148,7 +148,7 @@ export default function MultiplayerHostPage() {
       }
     };
     createRoom();
-  }, [quizId, navigate]);
+  }, [navigate]);
 
   // Callbacks for WebSocket events
   const handleGameStarted = useCallback((question: QuestionData) => {

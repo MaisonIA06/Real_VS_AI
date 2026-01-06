@@ -3,7 +3,7 @@ Serializers for the admin API.
 """
 from rest_framework import serializers
 from django.conf import settings
-from apps.game.models import Category, MediaPair, Quiz, QuizPair, GameSession, GlobalStats, SecretQuote
+from apps.game.models import Category, MediaPair, GameSession, GlobalStats
 
 
 class CategoryAdminSerializer(serializers.ModelSerializer):
@@ -54,9 +54,7 @@ class MediaPairAdminSerializer(serializers.ModelSerializer):
                 if url.startswith('/'):
                     scheme = request.scheme
                     host = request.get_host()
-                    # Extraire le hostname sans port
                     hostname = host.split(':')[0] if ':' in host else host
-                    # Toujours utiliser le port 8080 pour les médias (via Nginx)
                     return f"{scheme}://{hostname}:8080{url}"
                 return url
             return obj.real_media.url if obj.real_media else None
@@ -97,117 +95,11 @@ class MediaPairCreateSerializer(serializers.ModelSerializer):
         fields = ['category', 'real_media', 'ai_media', 'audio_media', 'is_real', 'media_type', 'difficulty', 'hint', 'is_active']
 
 
-class QuizPairSerializer(serializers.ModelSerializer):
-    media_pair_details = MediaPairAdminSerializer(source='media_pair', read_only=True)
-
-    class Meta:
-        model = QuizPair
-        fields = ['id', 'media_pair', 'media_pair_details', 'order']
-
-
-class QuizAdminSerializer(serializers.ModelSerializer):
-    quiz_pairs = QuizPairSerializer(source='quizpair_set', many=True, read_only=True)
-    pairs_count = serializers.SerializerMethodField()
-    sessions_count = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Quiz
-        fields = [
-            'id', 'name', 'description', 'is_random', 'is_active',
-            'pairs_count', 'sessions_count', 'quiz_pairs', 'created_at'
-        ]
-
-    def get_pairs_count(self, obj):
-        return obj.pairs.count()
-
-    def get_sessions_count(self, obj):
-        return obj.game_sessions.count()
-
-
-class QuizCreateSerializer(serializers.ModelSerializer):
-    pair_ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        write_only=True,
-        required=False
-    )
-
-    class Meta:
-        model = Quiz
-        fields = ['name', 'description', 'is_random', 'is_active', 'pair_ids']
-
-    def create(self, validated_data):
-        pair_ids = validated_data.pop('pair_ids', [])
-        quiz = Quiz.objects.create(**validated_data)
-
-        for order, pair_id in enumerate(pair_ids):
-            try:
-                pair = MediaPair.objects.get(id=pair_id)
-                QuizPair.objects.create(quiz=quiz, media_pair=pair, order=order)
-            except MediaPair.DoesNotExist:
-                pass
-
-        return quiz
-
-    def update(self, instance, validated_data):
-        pair_ids = validated_data.pop('pair_ids', None)
-
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-
-        if pair_ids is not None:
-            # Clear existing pairs and add new ones
-            instance.quizpair_set.all().delete()
-            for order, pair_id in enumerate(pair_ids):
-                try:
-                    pair = MediaPair.objects.get(id=pair_id)
-                    QuizPair.objects.create(quiz=instance, media_pair=pair, order=order)
-                except MediaPair.DoesNotExist:
-                    pass
-
-        return instance
-
-
 class DashboardStatsSerializer(serializers.Serializer):
     total_categories = serializers.IntegerField()
     total_pairs = serializers.IntegerField()
-    total_quizzes = serializers.IntegerField()
     total_sessions = serializers.IntegerField()
     completed_sessions = serializers.IntegerField()
     average_score = serializers.FloatField()
     recent_sessions = serializers.ListField()
     top_pairs = serializers.ListField()
-
-
-class SecretQuoteAdminSerializer(serializers.ModelSerializer):
-    """Serializer for secret quotes in admin."""
-    author_image = serializers.SerializerMethodField()
-
-    class Meta:
-        model = SecretQuote
-        fields = [
-            'id', 'quote', 'hint', 'author_name', 'author_image',
-            'is_active', 'order', 'created_at', 'updated_at'
-        ]
-
-    def get_author_image(self, obj):
-        if obj.author_image:
-            request = self.context.get('request')
-            if request:
-                url = obj.author_image.url
-                if url.startswith('/'):
-                    scheme = request.scheme
-                    host = request.get_host()
-                    hostname = host.split(':')[0] if ':' in host else host
-                    return f"{scheme}://{hostname}:8080{url}"
-                return url
-            return obj.author_image.url if obj.author_image else None
-        return None
-
-
-class SecretQuoteCreateSerializer(serializers.ModelSerializer):
-    """Serializer for creating/updating secret quotes."""
-    class Meta:
-        model = SecretQuote
-        fields = ['quote', 'hint', 'author_name', 'author_image', 'is_active', 'order']
-

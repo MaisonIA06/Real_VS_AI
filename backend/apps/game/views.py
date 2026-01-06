@@ -9,9 +9,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Quiz, MediaPair, GameSession, GameAnswer, GlobalStats, SecretQuote, MultiplayerRoom
+from .models import MediaPair, GameSession, GameAnswer, GlobalStats, MultiplayerRoom
 from .serializers import (
-    QuizListSerializer,
     GameSessionCreateSerializer,
     GameSessionSerializer,
     MediaPairGameSerializer,
@@ -23,15 +22,6 @@ from .serializers import (
 )
 
 
-class QuizListView(APIView):
-    """List available quizzes."""
-
-    def get(self, request):
-        quizzes = Quiz.objects.filter(is_active=True)
-        serializer = QuizListSerializer(quizzes, many=True)
-        return Response(serializer.data)
-
-
 class GameSessionView(APIView):
     """Create a new game session or get session details."""
 
@@ -40,27 +30,9 @@ class GameSessionView(APIView):
         serializer = GameSessionCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        quiz_id = serializer.validated_data.get('quiz_id')
-        quiz = None
-        pairs = []
-
-        if quiz_id:
-            try:
-                quiz = Quiz.objects.get(id=quiz_id, is_active=True)
-            except Quiz.DoesNotExist:
-                return Response(
-                    {'error': 'Quiz non trouvé'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-
-        # Get pairs for the session
-        if quiz and not quiz.is_random:
-            # Use quiz-specific pairs in order
-            pairs = list(quiz.pairs.filter(is_active=True).order_by('quizpair__order')[:10])
-        else:
-            # Random mode: pick 10 random pairs
-            all_pairs = list(MediaPair.objects.filter(is_active=True))
-            pairs = random.sample(all_pairs, min(10, len(all_pairs)))
+        # Pick 10 random pairs
+        all_pairs = list(MediaPair.objects.filter(is_active=True))
+        pairs = random.sample(all_pairs, min(10, len(all_pairs)))
 
         if len(pairs) < 1:
             return Response(
@@ -72,7 +44,7 @@ class GameSessionView(APIView):
         audience_type = serializer.validated_data.get('audience_type', 'public')
 
         # Create session with total pairs count
-        session = GameSession.objects.create(quiz=quiz, audience_type=audience_type, total_pairs=len(pairs))
+        session = GameSession.objects.create(audience_type=audience_type, total_pairs=len(pairs))
 
         # Generate random positions for real media (left or right) - only for image/video
         positions = {}
@@ -80,8 +52,7 @@ class GameSessionView(APIView):
             if pair.media_type != 'audio':
                 positions[pair.id] = random.choice(['left', 'right'])
 
-        # Store positions in session (we'll use cache or session storage in production)
-        # For now, store in the request session or encode in response
+        # Store positions in session
         request.session[f'positions_{session.session_key}'] = positions
         request.session[f'pairs_{session.session_key}'] = [p.id for p in pairs]
 
@@ -94,7 +65,7 @@ class GameSessionView(APIView):
 
         response_data = {
             'session_key': str(session.session_key),
-            'quiz_name': quiz.name if quiz else 'Mode Aléatoire',
+            'quiz_name': 'Mode Aléatoire',
             'pairs': pairs_serializer.data,
             'total_pairs': len(pairs),
         }
@@ -194,7 +165,6 @@ class AnswerSubmitView(APIView):
             global_stats.save()
 
             # Check if session is complete
-            # Use total_pairs from session instead of request.session which may be unreliable
             if current_order >= session.total_pairs:
                 session.is_completed = True
 
@@ -258,7 +228,6 @@ class LeaderboardView(APIView):
     """Get leaderboard."""
 
     def get(self, request):
-        quiz_id = request.query_params.get('quiz_id')
         limit = int(request.query_params.get('limit', 10))
 
         sessions = GameSession.objects.filter(
@@ -266,73 +235,10 @@ class LeaderboardView(APIView):
             pseudo__isnull=False,
         ).exclude(pseudo='')
 
-        if quiz_id:
-            sessions = sessions.filter(quiz_id=quiz_id)
-
         sessions = sessions.order_by('-score', 'time_total_ms')[:limit]
 
         serializer = LeaderboardEntrySerializer(sessions, many=True)
         return Response(serializer.data)
-
-
-class SecretQuizView(APIView):
-    """Get secret quiz data (citations with shuffled authors)."""
-
-    def get(self, request):
-        """Return active quotes with unique authors (no duplicates)."""
-        quotes = SecretQuote.objects.filter(is_active=True).order_by('order', 'id')
-        
-        if not quotes.exists():
-            return Response({'error': 'Aucune citation disponible'}, status=status.HTTP_404_NOT_FOUND)
-        
-        # Build questions list and collect unique authors
-        questions = []
-        unique_authors = {}  # key: author_name (lowercase), value: author data
-        author_name_to_id = {}  # Mapping author_name -> unique author ID
-        
-        for quote in quotes:
-            # Build image URL
-            image_url = None
-            if quote.author_image:
-                url = quote.author_image.url
-                if url.startswith('/'):
-                    scheme = request.scheme
-                    host = request.get_host()
-                    hostname = host.split(':')[0] if ':' in host else host
-                    image_url = f"{scheme}://{hostname}:8080{url}"
-                else:
-                    image_url = url
-            
-            # Normalize author name for deduplication
-            author_key = quote.author_name.strip().lower()
-            
-            # Only add author if not already present
-            if author_key not in unique_authors:
-                author_id = len(unique_authors) + 1  # Generate unique ID
-                unique_authors[author_key] = {
-                    'id': author_id,
-                    'name': quote.author_name,
-                    'image': image_url,
-                }
-                author_name_to_id[author_key] = author_id
-            
-            # Add question with reference to unique author ID
-            questions.append({
-                'id': quote.id,
-                'quote': quote.quote,
-                'hint': quote.hint,
-                'correct_author_id': author_name_to_id[author_key],
-            })
-        
-        # Convert unique authors dict to list and shuffle
-        authors_list = list(unique_authors.values())
-        random.shuffle(authors_list)
-        
-        return Response({
-            'questions': questions,
-            'authors': authors_list,
-            'total_questions': len(questions),
-        })
 
 
 # =============================================================================
@@ -343,28 +249,13 @@ class MultiplayerRoomCreateView(APIView):
     """Create a new multiplayer room."""
 
     def post(self, request):
-        quiz_id = request.data.get('quiz_id')
-        quiz = None
-
-        if quiz_id:
-            try:
-                quiz = Quiz.objects.get(id=quiz_id, is_active=True)
-            except Quiz.DoesNotExist:
-                return Response(
-                    {'error': 'Quiz non trouvé'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-
         # Create room
-        room = MultiplayerRoom.objects.create(quiz=quiz)
+        room = MultiplayerRoom.objects.create()
 
         return Response({
             'id': room.id,
             'room_code': room.room_code,
-            'quiz': {
-                'id': quiz.id,
-                'name': quiz.name,
-            } if quiz else None,
+            'quiz': None,
             'status': room.status,
             'created_at': room.created_at.isoformat(),
         }, status=status.HTTP_201_CREATED)
@@ -386,10 +277,7 @@ class MultiplayerRoomDetailView(APIView):
         return Response({
             'id': room.id,
             'room_code': room.room_code,
-            'quiz': {
-                'id': room.quiz.id,
-                'name': room.quiz.name,
-            } if room.quiz else None,
+            'quiz': None,
             'status': room.status,
             'players_count': room.players.filter(is_connected=True).count(),
             'created_at': room.created_at.isoformat(),
@@ -403,7 +291,6 @@ class LocalIPView(APIView):
         import socket
         
         # Méthode 1: Utiliser X-Forwarded-Host (l'IP/hostname utilisé par le client)
-        # C'est la meilleure option car c'est l'adresse que l'enseignant utilise déjà
         forwarded_host = request.META.get('HTTP_X_FORWARDED_HOST', '')
         if forwarded_host:
             host_ip = forwarded_host.split(':')[0]
@@ -417,12 +304,11 @@ class LocalIPView(APIView):
             if host_ip and host_ip not in ('localhost', '127.0.0.1'):
                 return Response({'ip': host_ip})
         
-        # Méthode 3: Fallback - détection via socket (utile en développement local)
+        # Méthode 3: Fallback - détection via socket
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.settimeout(0)
             try:
-                # Connect to a public IP to determine local interface
                 s.connect(('8.8.8.8', 80))
                 ip = s.getsockname()[0]
             except Exception:
@@ -433,4 +319,3 @@ class LocalIPView(APIView):
             ip = '127.0.0.1'
         
         return Response({'ip': ip})
-
