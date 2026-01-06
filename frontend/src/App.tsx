@@ -10,6 +10,11 @@ import AdminQuizzes from './pages/admin/AdminQuizzes';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminSecretQuotes from './pages/admin/AdminSecretQuotes';
 
+// Multiplayer / Live mode pages
+import MultiplayerHostPage from './pages/multiplayer/MultiplayerHostPage';
+import MultiplayerJoinPage from './pages/multiplayer/MultiplayerJoinPage';
+import MultiplayerPlayerPage from './pages/multiplayer/MultiplayerPlayerPage';
+
 function App() {
   return (
     <div className="min-h-screen bg-animated">
@@ -20,6 +25,11 @@ function App() {
         <Route path="/result/:sessionKey" element={<ResultPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/secret-quiz" element={<SecretQuizPage />} />
+
+        {/* Multiplayer / Live mode routes */}
+        <Route path="/multiplayer/host" element={<MultiplayerHostPage />} />
+        <Route path="/multiplayer/join/:roomCode?" element={<MultiplayerJoinPage />} />
+        <Route path="/multiplayer/play/:roomCode" element={<MultiplayerPlayerPage />} />
 
         {/* Admin routes */}
         <Route path="/admin" element={<AdminDashboard />} />

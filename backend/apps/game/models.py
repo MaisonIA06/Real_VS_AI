@@ -192,6 +192,7 @@ class GameSession(models.Model):
     streak_max = models.IntegerField(default=0)
     current_streak = models.IntegerField(default=0)
     time_total_ms = models.IntegerField(default=0)
+    total_pairs = models.IntegerField(default=0, help_text="Nombre total de paires dans cette session")
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -305,4 +306,147 @@ class SecretQuote(models.Model):
 def delete_celebrity_image_on_delete(sender, instance, **kwargs):
     """Signal pour supprimer l'image lorsqu'une citation est supprimée."""
     instance.delete_image_file()
+
+
+# =============================================================================
+# Multiplayer / Live Mode Models
+# =============================================================================
+
+def generate_room_code():
+    """Génère un code de room unique de 6 caractères alphanumériques."""
+    import random
+    import string
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+
+class MultiplayerRoom(models.Model):
+    """A multiplayer room for live classroom sessions."""
+    
+    class RoomStatus(models.TextChoices):
+        WAITING = 'waiting', 'En attente'
+        PLAYING = 'playing', 'En cours'
+        SHOWING_ANSWER = 'showing_answer', 'Révélation'
+        FINISHED = 'finished', 'Terminé'
+    
+    room_code = models.CharField(
+        max_length=6,
+        unique=True,
+        default=generate_room_code,
+        help_text="Code unique de la room (6 caractères)"
+    )
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='multiplayer_rooms'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=RoomStatus.choices,
+        default=RoomStatus.WAITING
+    )
+    current_pair_index = models.IntegerField(
+        default=0,
+        help_text="Index de la question actuelle"
+    )
+    ai_positions = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Position de l'IA pour chaque paire (pair_id: 'left'|'right')"
+    )
+    pairs = models.ManyToManyField(
+        MediaPair,
+        blank=True,
+        related_name='multiplayer_rooms',
+        help_text="Paires de médias pour cette room"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Room Multiplayer"
+        verbose_name_plural = "Rooms Multiplayer"
+
+    def __str__(self):
+        return f"Room {self.room_code} - {self.status}"
+
+
+class MultiplayerPlayer(models.Model):
+    """A player in a multiplayer room."""
+    
+    room = models.ForeignKey(
+        MultiplayerRoom,
+        on_delete=models.CASCADE,
+        related_name='players'
+    )
+    pseudo = models.CharField(
+        max_length=50,
+        help_text="Pseudo du joueur"
+    )
+    score = models.IntegerField(default=0)
+    session_token = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        help_text="Token unique pour la reconnexion"
+    )
+    channel_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Nom du channel WebSocket actuel"
+    )
+    is_connected = models.BooleanField(
+        default=True,
+        help_text="Indique si le joueur est actuellement connecté"
+    )
+    joined_at = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-score', 'joined_at']
+        verbose_name = "Joueur Multiplayer"
+        verbose_name_plural = "Joueurs Multiplayer"
+
+    def __str__(self):
+        return f"{self.pseudo} (Room {self.room.room_code}) - {self.score} pts"
+
+
+class MultiplayerAnswer(models.Model):
+    """An answer submitted by a player in a multiplayer game."""
+    
+    player = models.ForeignKey(
+        MultiplayerPlayer,
+        on_delete=models.CASCADE,
+        related_name='answers'
+    )
+    media_pair = models.ForeignKey(
+        MediaPair,
+        on_delete=models.CASCADE,
+        related_name='multiplayer_answers'
+    )
+    choice = models.CharField(
+        max_length=10,
+        help_text="Choix du joueur: 'left', 'right', 'real', 'ai'"
+    )
+    is_correct = models.BooleanField()
+    points_earned = models.IntegerField(default=0)
+    response_time_ms = models.IntegerField(
+        help_text="Temps de réponse en millisecondes"
+    )
+    answer_order = models.IntegerField(
+        default=0,
+        help_text="Ordre de réponse (1er, 2ème, etc.)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['answer_order']
+        verbose_name = "Réponse Multiplayer"
+        verbose_name_plural = "Réponses Multiplayer"
+        unique_together = ['player', 'media_pair']
+
+    def __str__(self):
+        status = "✓" if self.is_correct else "✗"
+        return f"{status} {self.player.pseudo} - {self.points_earned} pts"
 
