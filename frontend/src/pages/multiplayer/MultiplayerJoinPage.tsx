@@ -17,7 +17,6 @@ export default function MultiplayerJoinPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [roomExists, setRoomExists] = useState<boolean | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>('Initializing...');
 
   // Sync roomCode from URL params (handles late resolution from React Router)
   useEffect(() => {
@@ -29,17 +28,10 @@ export default function MultiplayerJoinPage() {
 
   // Verify room exists when code changes
   useEffect(() => {
-    console.log('[JoinPage] useEffect triggered, roomCode:', roomCode, 'length:', roomCode.length);
-    setDebugInfo(`Code: ${roomCode} (${roomCode.length} chars)`);
-    
     if (roomCode.length === 6) {
       const verifyRoom = async () => {
-        console.log('[JoinPage] Verifying room:', roomCode.toUpperCase());
-        setDebugInfo(`Vérification de ${roomCode}...`);
-        
         // Utiliser fetch natif au lieu d'axios pour iOS
         const apiUrl = `${window.location.protocol}//${window.location.hostname}:8080/api/game/multiplayer/rooms/${roomCode.toUpperCase()}/`;
-        setDebugInfo(`Fetching: ${apiUrl}`);
         
         try {
           const response = await fetch(apiUrl, {
@@ -50,20 +42,13 @@ export default function MultiplayerJoinPage() {
           });
           
           if (response.ok) {
-            const data = await response.json();
-            console.log('[JoinPage] Room found:', data);
-            setDebugInfo(`Room ${roomCode} trouvée!`);
             setRoomExists(true);
             setError(null);
           } else {
-            setDebugInfo(`HTTP ${response.status}: Room non trouvée`);
             setRoomExists(false);
             setError('Room introuvable');
           }
         } catch (err: unknown) {
-          console.error('[JoinPage] Room verification failed:', err);
-          const errorMsg = err instanceof Error ? err.message : String(err);
-          setDebugInfo(`Fetch error: ${errorMsg}`);
           setRoomExists(false);
           setError('Room introuvable');
         }
@@ -111,11 +96,6 @@ export default function MultiplayerJoinPage() {
       </div>
 
       <LogoMIA size="medium" />
-
-      {/* Debug info - à supprimer après résolution du bug */}
-      <div className="bg-yellow-500/20 border border-yellow-500 rounded-lg px-4 py-2 mb-4 text-yellow-300 text-sm">
-        <strong>Debug:</strong> {debugInfo} | URL param: {urlRoomCode || 'none'}
-      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

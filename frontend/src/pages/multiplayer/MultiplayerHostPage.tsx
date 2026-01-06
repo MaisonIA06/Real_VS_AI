@@ -868,18 +868,6 @@ export default function MultiplayerHostPage() {
                   </div>
                 </motion.div>
               )}
-
-              {/* Back to Home */}
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 3 }}
-                onClick={() => navigate('/')}
-                className="btn-primary inline-flex items-center gap-3"
-              >
-                <Home className="w-5 h-5" />
-                Retour à l'accueil
-              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>

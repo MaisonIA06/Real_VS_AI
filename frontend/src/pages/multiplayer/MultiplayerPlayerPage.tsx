@@ -10,7 +10,6 @@ import {
   Crown,
   Medal,
   Award,
-  Home,
   WifiOff,
 } from 'lucide-react';
 import { useMultiplayerSocket, QuestionData, AnswerData, PodiumPlayer, AnswerResult } from '../../hooks/useMultiplayerSocket';
@@ -213,12 +212,6 @@ export default function MultiplayerPlayerPage() {
     const responseTime = Date.now() - startTimeRef.current;
     console.log('[Player] Submitting answer, responseTime:', responseTime);
     submitAnswer(choice, responseTime);
-  };
-
-  const handleBackToHome = () => {
-    // Clear session and navigate home
-    clearSession();
-    navigate('/');
   };
 
   // Find player rank in podium
@@ -577,15 +570,6 @@ export default function MultiplayerPlayerPage() {
                   </div>
                 ))}
               </div>
-
-              {/* Back Button */}
-              <button
-                onClick={handleBackToHome}
-                className="btn-primary inline-flex items-center gap-2"
-              >
-                <Home className="w-5 h-5" />
-                Retour à l'accueil
-              </button>
             </motion.div>
           )}
         </AnimatePresence>
