@@ -2,7 +2,7 @@
 Serializers for the game API.
 """
 from rest_framework import serializers
-from .models import Category, MediaPair, GameSession, GameAnswer, GlobalStats
+from .models import Category, MediaPair, Quiz, GameSession, GameAnswer, GlobalStats
 
 
 def build_media_url(request, media_field):
@@ -86,8 +86,22 @@ class MediaPairGameSerializer(serializers.ModelSerializer):
         return None
 
 
+class QuizListSerializer(serializers.ModelSerializer):
+    pairs_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Quiz
+        fields = ['id', 'name', 'description', 'is_random', 'pairs_count']
+
+    def get_pairs_count(self, obj):
+        if obj.is_random:
+            return MediaPair.objects.filter(is_active=True).count()
+        return obj.pairs.filter(is_active=True).count()
+
+
 class GameSessionCreateSerializer(serializers.Serializer):
     """Serializer for creating a new game session."""
+    quiz_id = serializers.IntegerField(required=False, allow_null=True)
     audience_type = serializers.ChoiceField(
         choices=['school', 'public'],
         required=True,
@@ -97,7 +111,7 @@ class GameSessionCreateSerializer(serializers.Serializer):
 
 class GameSessionSerializer(serializers.ModelSerializer):
     pairs = serializers.SerializerMethodField()
-    quiz_name = serializers.SerializerMethodField()
+    quiz_name = serializers.CharField(source='quiz.name', read_only=True, allow_null=True)
 
     class Meta:
         model = GameSession
@@ -107,9 +121,6 @@ class GameSessionSerializer(serializers.ModelSerializer):
         # Get pairs from session data stored in context
         pairs_data = self.context.get('pairs_data', [])
         return pairs_data
-
-    def get_quiz_name(self, obj):
-        return 'Mode Aléatoire'
 
 
 class AnswerSubmitSerializer(serializers.Serializer):
@@ -132,7 +143,7 @@ class AnswerResponseSerializer(serializers.Serializer):
 class GameResultSerializer(serializers.ModelSerializer):
     """Serializer for final game results."""
     answers = serializers.SerializerMethodField()
-    quiz_name = serializers.SerializerMethodField()
+    quiz_name = serializers.CharField(source='quiz.name', read_only=True, allow_null=True)
 
     class Meta:
         model = GameSession
@@ -152,20 +163,14 @@ class GameResultSerializer(serializers.ModelSerializer):
             for a in obj.answers.all()
         ]
 
-    def get_quiz_name(self, obj):
-        return 'Mode Aléatoire'
-
 
 class LeaderboardEntrySerializer(serializers.ModelSerializer):
     """Serializer for leaderboard entries."""
-    quiz_name = serializers.SerializerMethodField()
+    quiz_name = serializers.CharField(source='quiz.name', read_only=True, allow_null=True)
 
     class Meta:
         model = GameSession
         fields = ['id', 'pseudo', 'score', 'streak_max', 'time_total_ms', 'quiz_name', 'created_at']
-
-    def get_quiz_name(self, obj):
-        return 'Mode Aléatoire'
 
 
 class PseudoSubmitSerializer(serializers.Serializer):

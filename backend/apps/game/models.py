@@ -61,11 +61,6 @@ def get_upload_path_audio(instance, filename):
     return f'pairs/audio/{category_slug}/{filename}'
 
 
-def get_upload_path_celebrity(instance, filename):
-    """Génère le chemin d'upload pour les photos de célébrités (Secret Quiz)."""
-    return f'celebrities/{filename}'
-
-
 class MediaPair(models.Model):
     """A pair of media: one real, one AI-generated. Or a single audio file."""
     
@@ -135,6 +130,42 @@ def delete_media_files_on_delete(sender, instance, **kwargs):
     instance.delete_media_files()
 
 
+class Quiz(models.Model):
+    """A custom quiz with selected media pairs."""
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    is_random = models.BooleanField(
+        default=False,
+        help_text="Si activé, pioche aléatoirement dans toutes les paires actives"
+    )
+    pairs = models.ManyToManyField(
+        MediaPair,
+        through='QuizPair',
+        related_name='quizzes',
+        blank=True
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Quizzes"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.name
+
+
+class QuizPair(models.Model):
+    """Intermediate model for Quiz-MediaPair relationship with ordering."""
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    media_pair = models.ForeignKey(MediaPair, on_delete=models.CASCADE)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+        unique_together = ['quiz', 'media_pair']
+
+
 class GameSession(models.Model):
     """A game session for a player."""
     
@@ -143,6 +174,13 @@ class GameSession(models.Model):
         PUBLIC = 'public', 'Grand Public'
     
     session_key = models.UUIDField(default=uuid.uuid4, unique=True)
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='game_sessions'
+    )
     audience_type = models.CharField(
         max_length=10,
         choices=AudienceType.choices,
@@ -215,6 +253,61 @@ class GlobalStats(models.Model):
         return round((self.correct_answers / self.total_attempts) * 100, 1)
 
 
+def get_upload_path_celebrity(instance, filename):
+    """Génère le chemin d'upload pour les images de célébrités."""
+    return f'secret_quiz/celebrities/{filename}'
+
+
+class SecretQuote(models.Model):
+    """Citation mystère pour le quiz secret (Easter Egg)."""
+    quote = models.TextField(
+        help_text="La citation à deviner"
+    )
+    hint = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Indice optionnel pour aider le joueur"
+    )
+    author_name = models.CharField(
+        max_length=100,
+        help_text="Nom de l'auteur de la citation"
+    )
+    author_image = models.ImageField(
+        upload_to=get_upload_path_celebrity,
+        help_text="Photo de l'auteur"
+    )
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text="Ordre d'affichage dans le quiz"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', '-created_at']
+        verbose_name = "Citation secrète"
+        verbose_name_plural = "Citations secrètes"
+
+    def __str__(self):
+        return f'"{self.quote[:50]}..." - {self.author_name}'
+
+    def delete_image_file(self):
+        """Supprime le fichier image associé du disque."""
+        if self.author_image:
+            try:
+                if os.path.isfile(self.author_image.path):
+                    os.remove(self.author_image.path)
+            except Exception:
+                pass
+
+
+@receiver(post_delete, sender=SecretQuote)
+def delete_celebrity_image_on_delete(sender, instance, **kwargs):
+    """Signal pour supprimer l'image lorsqu'une citation est supprimée."""
+    instance.delete_image_file()
+
+
 # =============================================================================
 # Multiplayer / Live Mode Models
 # =============================================================================
@@ -240,6 +333,13 @@ class MultiplayerRoom(models.Model):
         unique=True,
         default=generate_room_code,
         help_text="Code unique de la room (6 caractères)"
+    )
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='multiplayer_rooms'
     )
     status = models.CharField(
         max_length=20,
