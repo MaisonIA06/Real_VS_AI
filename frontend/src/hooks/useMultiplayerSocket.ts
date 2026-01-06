@@ -9,15 +9,14 @@ const makeAbsoluteUrl = (url: string | undefined | null): string | undefined => 
     return url;
   }
   
-  // Build absolute URL from current location
+  // Build absolute URL from current location (host includes port)
   const protocol = window.location.protocol;
-  const hostname = window.location.hostname;
-  const port = '8080'; // Nginx port
+  const host = window.location.host;
   
   // Ensure URL starts with /
   const path = url.startsWith('/') ? url : `/${url}`;
   
-  return `${protocol}//${hostname}:${port}${path}`;
+  return `${protocol}//${host}${path}`;
 };
 
 // Transform question data to use absolute URLs
@@ -163,11 +162,10 @@ export function useMultiplayerSocket({
 
     // Construct WebSocket URL based on current location
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.hostname;
-    const port = '8080'; // Nginx port
+    const host = window.location.host; // This includes the port if present
     // Normalize room code to uppercase
     const normalizedRoomCode = roomCode.toUpperCase();
-    const wsUrl = `${protocol}//${host}:${port}/ws/multiplayer/${normalizedRoomCode}/`;
+    const wsUrl = `${protocol}//${host}/ws/multiplayer/${normalizedRoomCode}/`;
 
     console.log('Connecting to WebSocket:', wsUrl);
 

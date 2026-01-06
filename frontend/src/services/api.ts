@@ -3,17 +3,14 @@ import axios from 'axios';
 // Utiliser une URL relative pour que l'API fonctionne depuis n'importe quel appareil
 // (tablettes, téléphones, etc. sur le réseau local)
 const getApiUrl = () => {
-  // Si une URL est définie explicitement, l'utiliser
-  if (import.meta.env.VITE_API_URL) {
+  // Si une URL est définie explicitement et n'est pas localhost, l'utiliser
+  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')) {
     return import.meta.env.VITE_API_URL;
   }
   
-  // Sinon, construire l'URL à partir de l'hôte actuel
-  const protocol = window.location.protocol;
-  const hostname = window.location.hostname;
-  const port = '8080'; // Port nginx
-  
-  return `${protocol}//${hostname}:${port}/api`;
+  // En production ou via Nginx, une URL relative est préférable
+  // car le frontend et l'API sont sur le même hôte/port
+  return '/api';
 };
 
 const API_URL = getApiUrl();

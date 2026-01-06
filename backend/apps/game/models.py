@@ -192,6 +192,7 @@ class GameSession(models.Model):
     streak_max = models.IntegerField(default=0)
     current_streak = models.IntegerField(default=0)
     time_total_ms = models.IntegerField(default=0)
+    total_pairs = models.IntegerField(default=0, help_text="Nombre total de paires dans cette session")
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

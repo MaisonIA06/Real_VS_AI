@@ -71,8 +71,8 @@ class GameSessionView(APIView):
         # Get audience type from request
         audience_type = serializer.validated_data.get('audience_type', 'public')
 
-        # Create session
-        session = GameSession.objects.create(quiz=quiz, audience_type=audience_type)
+        # Create session with total pairs count
+        session = GameSession.objects.create(quiz=quiz, audience_type=audience_type, total_pairs=len(pairs))
 
         # Generate random positions for real media (left or right) - only for image/video
         positions = {}
@@ -194,8 +194,8 @@ class AnswerSubmitView(APIView):
             global_stats.save()
 
             # Check if session is complete
-            pairs_in_session = request.session.get(f'pairs_{session.session_key}', [])
-            if current_order >= len(pairs_in_session):
+            # Use total_pairs from session instead of request.session which may be unreliable
+            if current_order >= session.total_pairs:
                 session.is_completed = True
 
             session.save()
