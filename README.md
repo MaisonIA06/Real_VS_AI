@@ -77,16 +77,6 @@
 
 ---
 
-
-
-
-
-
-
-
-
----
-
 ## 📁 Structure du Projet
 
 ```text
