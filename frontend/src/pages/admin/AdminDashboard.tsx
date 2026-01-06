@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Image,
-  FileQuestion,
   FolderOpen,
   Users,
   Trophy,
@@ -60,14 +59,6 @@ export default function AdminDashboard() {
       color: 'text-accent-400',
       bgColor: 'bg-accent-500/20',
       link: '/admin/pairs',
-    },
-    {
-      title: 'Quiz',
-      value: stats?.total_quizzes || 0,
-      icon: FileQuestion,
-      color: 'text-orange-400',
-      bgColor: 'bg-orange-500/20',
-      link: '/admin/quizzes',
     },
     {
       title: 'Sessions jouées',

@@ -8,16 +8,10 @@ import LogoMIA from '../components/LogoMIA';
 
 export default function LeaderboardPage() {
   const navigate = useNavigate();
-  const [selectedQuiz, setSelectedQuiz] = useState<number | undefined>(undefined);
-
-  const { data: quizzes } = useQuery({
-    queryKey: ['quizzes'],
-    queryFn: () => gameApi.getQuizzes().then((res) => res.data),
-  });
 
   const { data: leaderboard, isLoading } = useQuery({
-    queryKey: ['leaderboard', selectedQuiz],
-    queryFn: () => gameApi.getLeaderboard(selectedQuiz, 20).then((res) => res.data),
+    queryKey: ['leaderboard'],
+    queryFn: () => gameApi.getLeaderboard(undefined, 20).then((res) => res.data),
   });
 
   const formatTime = (ms: number) => {
@@ -76,40 +70,6 @@ export default function LeaderboardPage() {
           </h1>
           <p className="text-dark-400">Les meilleurs détecteurs d'IA</p>
         </motion.div>
-
-        {/* Quiz Filter */}
-        {quizzes && quizzes.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-wrap justify-center gap-3 mb-8"
-          >
-            <button
-              onClick={() => setSelectedQuiz(undefined)}
-              className={`px-4 py-2 rounded-lg transition-all ${
-                selectedQuiz === undefined
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-dark-800 text-dark-300 hover:bg-dark-700'
-              }`}
-            >
-              Tous
-            </button>
-            {quizzes.map((quiz) => (
-              <button
-                key={quiz.id}
-                onClick={() => setSelectedQuiz(quiz.id)}
-                className={`px-4 py-2 rounded-lg transition-all ${
-                  selectedQuiz === quiz.id
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-dark-800 text-dark-300 hover:bg-dark-700'
-                }`}
-              >
-                {quiz.name}
-              </button>
-            ))}
-          </motion.div>
-        )}
 
         {/* Leaderboard */}
         <motion.div
