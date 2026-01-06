@@ -44,14 +44,6 @@ export interface MediaPair {
   is_real?: boolean;
 }
 
-export interface Quiz {
-  id: number;
-  name: string;
-  description: string;
-  is_random: boolean;
-  pairs_count: number;
-}
-
 export interface GameSession {
   session_key: string;
   quiz_name: string;
@@ -188,22 +180,6 @@ export interface MediaPairAdmin {
   created_at: string;
 }
 
-export interface QuizAdmin {
-  id: number;
-  name: string;
-  description: string;
-  is_random: boolean;
-  is_active: boolean;
-  pairs_count: number;
-  sessions_count: number;
-  quiz_pairs: {
-    id: number;
-    media_pair: number;
-    order: number;
-  }[];
-  created_at: string;
-}
-
 export interface AudienceStats {
   success_rate: number;
   total_sessions: number;
@@ -214,7 +190,6 @@ export interface AudienceStats {
 export interface DashboardStats {
   total_categories: number;
   total_pairs: number;
-  total_quizzes: number;
   total_sessions: number;
   completed_sessions: number;
   school_stats: AudienceStats;
@@ -249,14 +224,6 @@ export const adminApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   deleteMediaPair: (id: number) => api.delete(`/admin/media-pairs/${id}/`),
-
-  // Quizzes
-  getQuizzes: () => api.get<QuizAdmin[]>('/admin/quizzes/'),
-  createQuiz: (data: { name: string; description?: string; is_random?: boolean; pair_ids?: number[] }) =>
-    api.post<QuizAdmin>('/admin/quizzes/', data),
-  updateQuiz: (id: number, data: Partial<QuizAdmin> & { pair_ids?: number[] }) =>
-    api.patch<QuizAdmin>(`/admin/quizzes/${id}/`, data),
-  deleteQuiz: (id: number) => api.delete(`/admin/quizzes/${id}/`),
 
   // Stats
   getStats: () => api.get<DashboardStats>('/admin/stats/'),

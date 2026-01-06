@@ -8,7 +8,6 @@ from . import views
 router = DefaultRouter()
 router.register(r'categories', views.CategoryViewSet)
 router.register(r'media-pairs', views.MediaPairViewSet)
-router.register(r'quizzes', views.QuizViewSet)
 router.register(r'secret-quotes', views.SecretQuoteViewSet)
 
 urlpatterns = [

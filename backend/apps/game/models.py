@@ -130,42 +130,6 @@ def delete_media_files_on_delete(sender, instance, **kwargs):
     instance.delete_media_files()
 
 
-class Quiz(models.Model):
-    """A custom quiz with selected media pairs."""
-    name = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    is_random = models.BooleanField(
-        default=False,
-        help_text="Si activé, pioche aléatoirement dans toutes les paires actives"
-    )
-    pairs = models.ManyToManyField(
-        MediaPair,
-        through='QuizPair',
-        related_name='quizzes',
-        blank=True
-    )
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name_plural = "Quizzes"
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return self.name
-
-
-class QuizPair(models.Model):
-    """Intermediate model for Quiz-MediaPair relationship with ordering."""
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
-    media_pair = models.ForeignKey(MediaPair, on_delete=models.CASCADE)
-    order = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        ordering = ['order']
-        unique_together = ['quiz', 'media_pair']
-
-
 class GameSession(models.Model):
     """A game session for a player."""
     
@@ -174,13 +138,6 @@ class GameSession(models.Model):
         PUBLIC = 'public', 'Grand Public'
     
     session_key = models.UUIDField(default=uuid.uuid4, unique=True)
-    quiz = models.ForeignKey(
-        Quiz,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='game_sessions'
-    )
     audience_type = models.CharField(
         max_length=10,
         choices=AudienceType.choices,
@@ -333,13 +290,6 @@ class MultiplayerRoom(models.Model):
         unique=True,
         default=generate_room_code,
         help_text="Code unique de la room (6 caractères)"
-    )
-    quiz = models.ForeignKey(
-        Quiz,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='multiplayer_rooms'
     )
     status = models.CharField(
         max_length=20,

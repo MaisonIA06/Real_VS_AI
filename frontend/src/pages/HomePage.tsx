@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Play, Zap, Trophy, Shuffle, GraduationCap, Users, X } from 'lucide-react';
+import { Play, Zap, Trophy, GraduationCap, Users, X } from 'lucide-react';
 import { gameApi } from '../services/api';
 import LogoMIA from '../components/LogoMIA';
 
@@ -19,7 +19,6 @@ const SECRET_SEQUENCE: { step: SecretStep; count: number }[] = [
 export default function HomePage() {
   const navigate = useNavigate();
   const [isStarting, setIsStarting] = useState(false);
-  const [selectedQuiz, setSelectedQuiz] = useState<number | null>(null);
   const [showAudienceModal, setShowAudienceModal] = useState(false);
 
   // État pour la séquence secrète
@@ -79,6 +78,7 @@ export default function HomePage() {
   const { data: quizzes, isLoading } = useQuery({
     queryKey: ['quizzes'],
     queryFn: () => gameApi.getQuizzes().then((res) => res.data),
+    enabled: false, // On désactive la récupération des quiz car la fonctionnalité est retirée
   });
 
   const handleStartClick = () => {
@@ -89,7 +89,7 @@ export default function HomePage() {
     setShowAudienceModal(false);
     setIsStarting(true);
     try {
-      const response = await gameApi.startSession(selectedQuiz ?? undefined, audienceType);
+      const response = await gameApi.startSession(undefined, audienceType); // Toujours undefined pour le quizId
       // Stocker les paires dans localStorage avant de naviguer
       localStorage.setItem(`pairs_${response.data.session_key}`, JSON.stringify(response.data.pairs));
       navigate(`/game/${response.data.session_key}`);
@@ -200,47 +200,6 @@ export default function HomePage() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Quiz Selection */}
-        {!isLoading && quizzes && quizzes.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="mb-8"
-          >
-            <h3 className="font-display text-lg font-semibold mb-4 text-dark-300">
-              Choisissez un quiz ou jouez en mode aléatoire
-            </h3>
-            <div className="flex flex-wrap justify-center gap-3">
-              <button
-                onClick={() => setSelectedQuiz(null)}
-                className={`px-4 py-2 rounded-lg transition-all ${
-                  selectedQuiz === null
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-dark-800 text-dark-300 hover:bg-dark-700'
-                }`}
-              >
-                <Shuffle className="w-4 h-4 inline mr-2" />
-                Aléatoire
-              </button>
-              {quizzes.map((quiz) => (
-                <button
-                  key={quiz.id}
-                  onClick={() => setSelectedQuiz(quiz.id)}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    selectedQuiz === quiz.id
-                      ? 'bg-primary-500 text-white'
-                      : 'bg-dark-800 text-dark-300 hover:bg-dark-700'
-                  }`}
-                >
-                  {quiz.name}
-                  <span className="ml-2 text-xs opacity-70">({quiz.pairs_count})</span>
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
 
         {/* Start Button */}
         <motion.div

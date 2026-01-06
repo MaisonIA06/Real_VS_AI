@@ -72,7 +72,6 @@ type HostScreen = 'lobby' | 'question' | 'answer' | 'podium';
 export default function MultiplayerHostPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const quizId = searchParams.get('quiz') ? parseInt(searchParams.get('quiz')!) : undefined;
 
   const [roomCode, setRoomCode] = useState<string | null>(null);
   const [joinUrl, setJoinUrl] = useState<string>('');
@@ -110,7 +109,7 @@ export default function MultiplayerHostPage() {
           console.warn('Failed to get IP from backend:', error);
         }
         
-        const response = await gameApi.createMultiplayerRoom(quizId);
+        const response = await gameApi.createMultiplayerRoom(undefined); // Toujours undefined pour quizId
         const code = response.data.room_code;
         setRoomCode(code);
         

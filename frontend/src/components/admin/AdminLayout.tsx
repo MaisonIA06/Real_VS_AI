@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Image,
-  FileQuestion,
   FolderOpen,
   Home,
   Settings,
@@ -18,7 +17,6 @@ const navItems = [
   { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/admin/categories', icon: FolderOpen, label: 'Catégories' },
   { path: '/admin/pairs', icon: Image, label: 'Paires de médias' },
-  { path: '/admin/quizzes', icon: FileQuestion, label: 'Quiz' },
   { path: '/admin/secret-quotes', icon: Sparkles, label: 'Quiz Secret', special: true },
 ];
 
