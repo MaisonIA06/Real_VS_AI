@@ -5,11 +5,8 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Info, 
-  Eye, 
-  Type, 
-  Fingerprint, 
+  Eye,  
   Layers, 
-  Sparkles,
   X
 } from 'lucide-react';
 import LogoMIA from '../components/LogoMIA';
@@ -18,7 +15,7 @@ interface Exhibit {
   id: number;
   title: string;
   subtitle: string;
-  icon: any;
+  image: string;
   hallucination: string;
   explanation: string;
   tip: string;
@@ -30,7 +27,7 @@ const exhibits: Exhibit[] = [
     id: 1,
     title: "L'Anatomie Impossible",
     subtitle: "Le syndrome du 6ème doigt",
-    icon: Fingerprint,
+    image: "/l'anatomie impossible.png",
     hallucination: "Les mains, les dents et les membres fusionnés sont les points faibles historiques des modèles génératifs.",
     explanation: "L'IA ne comprend pas la structure squelettique ou biologique. Elle 'sait' que des doigts apparaissent souvent près d'une main, mais elle ne compte pas. Pour elle, une main est une texture complexe de formes oblongues.",
     tip: "Comptez toujours les doigts et vérifiez l'articulation des membres. Regardez si les dents sont trop nombreuses ou fusionnées.",
@@ -40,7 +37,7 @@ const exhibits: Exhibit[] = [
     id: 2,
     title: "Le Texte Fantôme",
     subtitle: "L'écriture de l'espace",
-    icon: Type,
+    image: "/le texte fantôme.png",
     hallucination: "Les glyphes qui ressemblent à du texte mais ne veulent rien dire, ou des lettres qui mutent.",
     explanation: "Les modèles d'IA traitent le texte comme des motifs visuels et non comme des symboles sémantiques. Ils reproduisent l'esthétique d'une police de caractères sans en comprendre la grammaire ou l'alphabet.",
     tip: "Essayez de lire les panneaux, les étiquettes ou les logos en arrière-plan. Si c'est illisible ou dans une langue inexistante, c'est une IA.",
@@ -50,7 +47,7 @@ const exhibits: Exhibit[] = [
     id: 3,
     title: "Reflets Incohérents",
     subtitle: "Le miroir brisé",
-    icon: Eye,
+    image: "/reflets incohérents.png",
     hallucination: "Des reflets dans les yeux ou sur l'eau qui ne correspondent pas à la scène environnante.",
     explanation: "L'IA génère les pixels par probabilité locale. Elle peut créer un magnifique paysage et un reflet d'eau, mais elle oublie souvent de lier mathématiquement la symétrie entre l'objet et son reflet.",
     tip: "Regardez les pupilles : le reflet de la source de lumière doit être identique des deux côtés. Vérifiez si les ombres tombent dans la même direction.",
@@ -60,7 +57,7 @@ const exhibits: Exhibit[] = [
     id: 4,
     title: "La Fusion des Objets",
     subtitle: "L'erreur de segmentation",
-    icon: Layers,
+    image: "/La Fusion des objets.png",
     hallucination: "Un vêtement qui devient de la peau, ou un sac à main qui sort directement du bras d'une personne.",
     explanation: "Ce qu'on appelle la 'segmentation' est difficile pour l'IA. Elle a du mal à définir où s'arrête un objet et où commence un autre, surtout quand les couleurs sont similaires.",
     tip: "Suivez les lignes de contour des objets. Cherchez les endroits où deux textures différentes semblent se mélanger de façon organique mais illogique.",
@@ -70,7 +67,7 @@ const exhibits: Exhibit[] = [
     id: 5,
     title: "Lissage de Porcelaine",
     subtitle: "La vallée de l'étrange",
-    icon: Sparkles,
+    image: "/lissage de porcelaine.png",
     hallucination: "Des visages trop parfaits, sans pores, sans rides, avec une texture rappelant le plastique ou la cire.",
     explanation: "Pour réduire le 'bruit' visuel, les IA ont tendance à sur-lisser les surfaces. Cela donne cet aspect 'filtre beauté' extrême qui supprime les micro-détails de la peau humaine réelle.",
     tip: "Zoomez sur la peau. L'absence de pores, de petits duvets, ou de légères imperfections asymétriques est un signe majeur de génération artificielle.",
@@ -133,7 +130,7 @@ export default function HallucinationsMuseumPage() {
                   animate={{ scale: 1, rotate: 0 }}
                   className="relative z-10"
                 >
-                  {currentExhibit.imagePlaceholder}
+                  <img src={currentExhibit.image} alt={currentExhibit.title} className="w-full h-full object-cover" />
                 </motion.span>
                 
                 {/* Floating Labels */}
