@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Real vs AI
+Comment=Lancer l'application Real vs AI en mode kiosque
+Icon=/home/mia/Bureau/Real_VS_AI/scripts/Start.png
+Exec=bash -c 'cd /home/mia/Bureau/Real_VS_AI && gnome-terminal -- bash -c "./scripts/start-kiosk.sh; exec bash"'
+Terminal=false
+Categories=Application;
+StartupNotify=true

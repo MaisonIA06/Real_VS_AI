@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Stop Real vs AI
+Comment=Arrêter les services Real vs AI
+Icon=/home/mia/Bureau/Real_VS_AI/scripts/Stop.png
+Exec=bash -c 'cd /home/mia/Bureau/Real_VS_AI && gnome-terminal -- bash -c "./scripts/stop-app.sh; exec bash"'
+Terminal=false
+Categories=Application;
+StartupNotify=true
