@@ -26,6 +26,22 @@ echo -e "${CYAN}========================================${NC}"
 echo ""
 
 # -------------------------------------------------------
+# Déterminer si on a besoin de sudo pour Docker
+# -------------------------------------------------------
+DOCKER_CMD="docker"
+if ! docker info &> /dev/null; then
+    # Docker ne répond pas sans sudo, on teste avec sudo
+    if sudo -n docker info &> /dev/null 2>&1; then
+        DOCKER_CMD="sudo docker"
+    else
+        # sudo nécessite un mot de passe, on le demande une seule fois
+        echo -e "${YELLOW}Droits administrateur requis pour Docker...${NC}"
+        sudo docker info &> /dev/null
+        DOCKER_CMD="sudo docker"
+    fi
+fi
+
+# -------------------------------------------------------
 # Étape 0 : Vérification de Docker
 # -------------------------------------------------------
 echo -e "${YELLOW}[0/3] Vérification de Docker...${NC}"
@@ -44,7 +60,7 @@ if ! command -v docker &> /dev/null; then
 fi
 
 # Vérifier si Docker daemon tourne
-if ! docker info &> /dev/null; then
+if ! $DOCKER_CMD info &> /dev/null; then
     echo -e "${YELLOW}Docker n'est pas lancé. Tentative de démarrage...${NC}"
 
     # Essayer de démarrer via systemd
@@ -60,7 +76,7 @@ if ! docker info &> /dev/null; then
     INTERVAL=3
 
     while [ $WAITED -lt $MAX_WAIT ]; do
-        if docker info &> /dev/null; then
+        if $DOCKER_CMD info &> /dev/null; then
             break
         fi
         sleep $INTERVAL
@@ -68,7 +84,7 @@ if ! docker info &> /dev/null; then
         echo "  Attente... (${WAITED}/${MAX_WAIT}s)"
     done
 
-    if ! docker info &> /dev/null; then
+    if ! $DOCKER_CMD info &> /dev/null; then
         echo ""
         echo -e "${RED}========================================${NC}"
         echo -e "${RED}   ERREUR: Docker n'a pas démarré${NC}"
@@ -93,10 +109,19 @@ echo ""
 echo -e "${YELLOW}[1/3] Démarrage des services Docker...${NC}"
 
 # Déterminer la commande docker compose (v2) ou docker-compose (v1)
-if docker compose version &> /dev/null; then
-    COMPOSE_CMD="docker compose"
+if $DOCKER_CMD compose version &> /dev/null; then
+    COMPOSE_CMD="$DOCKER_CMD compose"
+elif command -v docker-compose &> /dev/null; then
+    if [ "$DOCKER_CMD" = "sudo docker" ]; then
+        COMPOSE_CMD="sudo docker-compose"
+    else
+        COMPOSE_CMD="docker-compose"
+    fi
 else
-    COMPOSE_CMD="docker-compose"
+    echo -e "${RED}Erreur: ni 'docker compose' ni 'docker-compose' n'est disponible.${NC}"
+    echo "Appuyez sur Entrée pour quitter..."
+    read -r
+    exit 1
 fi
 
 $COMPOSE_CMD up -d --build

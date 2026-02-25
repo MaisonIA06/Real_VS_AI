@@ -7,6 +7,7 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
+YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Se placer dans le dossier du projet (parent du dossier scripts)
@@ -19,11 +20,32 @@ echo -e "${CYAN}   Real vs AI - Arrêt des services${NC}"
 echo -e "${CYAN}========================================${NC}"
 echo ""
 
+# Déterminer si on a besoin de sudo pour Docker
+DOCKER_CMD="docker"
+if ! docker info &> /dev/null; then
+    if sudo -n docker info &> /dev/null 2>&1; then
+        DOCKER_CMD="sudo docker"
+    else
+        echo -e "${YELLOW}Droits administrateur requis pour Docker...${NC}"
+        sudo docker info &> /dev/null
+        DOCKER_CMD="sudo docker"
+    fi
+fi
+
 # Déterminer la commande docker compose
-if docker compose version &> /dev/null; then
-    COMPOSE_CMD="docker compose"
+if $DOCKER_CMD compose version &> /dev/null; then
+    COMPOSE_CMD="$DOCKER_CMD compose"
+elif command -v docker-compose &> /dev/null; then
+    if [ "$DOCKER_CMD" = "sudo docker" ]; then
+        COMPOSE_CMD="sudo docker-compose"
+    else
+        COMPOSE_CMD="docker-compose"
+    fi
 else
-    COMPOSE_CMD="docker-compose"
+    echo -e "${RED}Erreur: ni 'docker compose' ni 'docker-compose' n'est disponible.${NC}"
+    echo "Appuyez sur Entrée pour quitter..."
+    read -r
+    exit 1
 fi
 
 echo "Arrêt des conteneurs Docker..."
