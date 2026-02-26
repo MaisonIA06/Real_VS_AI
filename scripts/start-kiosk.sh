@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Script de lancement Real vs AI en mode Kiosque (plein écran) - Ubuntu/Linux
+# Script de lancement Real vs AI - Ubuntu/Linux
 # =============================================================================
 
 set -e
@@ -21,7 +21,7 @@ URL="http://localhost:8080"
 WAIT_SECONDS=15
 
 echo -e "${CYAN}========================================${NC}"
-echo -e "${CYAN}   Real vs AI - Mode Kiosque${NC}"
+echo -e "${CYAN}   Real vs AI - Lancement${NC}"
 echo -e "${CYAN}========================================${NC}"
 echo ""
 
@@ -163,20 +163,18 @@ if [ "$SERVICE_READY" = false ]; then
 fi
 
 echo ""
-echo -e "${GREEN}Ouverture du navigateur en mode plein écran...${NC}"
+echo -e "${GREEN}Ouverture du navigateur...${NC}"
 echo -e "URL: ${URL}"
 echo ""
-echo -e "${CYAN}Pour quitter : F11 ou Alt+F4${NC}"
-echo ""
 
-# Détecter le navigateur et lancer en mode kiosque
+# Détecter le navigateur et lancer en mode normal
 BROWSER_LAUNCHED=false
 
 # Essayer Google Chrome
 for chrome_path in "google-chrome" "google-chrome-stable" "chromium-browser" "chromium"; do
     if command -v "$chrome_path" &> /dev/null; then
         echo "Utilisation de ${chrome_path}"
-        nohup "$chrome_path" --kiosk --disable-infobars --disable-session-crashed-bubble "$URL" &>/dev/null &
+        nohup "$chrome_path" --start-maximized "$URL" &>/dev/null &
         BROWSER_LAUNCHED=true
         break
     fi
@@ -186,7 +184,7 @@ done
 if [ "$BROWSER_LAUNCHED" = false ]; then
     if command -v firefox &> /dev/null; then
         echo "Utilisation de Firefox"
-        nohup firefox --kiosk "$URL" &>/dev/null &
+        nohup firefox "$URL" &>/dev/null &
         BROWSER_LAUNCHED=true
     fi
 fi
