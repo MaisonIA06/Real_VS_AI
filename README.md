@@ -1,30 +1,35 @@
 # MIA - Real vs AI 🎮
 
-**MIA - Real vs AI** est une plateforme éducative et ludique conçue pour aider les utilisateurs, notamment les collégiens, à développer leur esprit critique face aux contenus générés par l'Intelligence Artificielle. Le but est simple : face à deux médias (image ou vidéo), il faut deviner lequel est réel et lequel a été créé par une IA.
+**MIA - Real vs AI** est une plateforme éducative et ludique conçue pour aider les utilisateurs, notamment les collégiens, à développer leur esprit critique face aux contenus générés par l'Intelligence Artificielle. Le but est simple : face à deux médias (image, vidéo ou audio), il faut deviner lequel est réel et lequel a été créé par une IA.
 
 ---
 
 ## 🌟 Fonctionnalités
 
 ### 🕹️ Mode Solo
-- **Sessions rapides** : 10 paires de médias par partie.
+- **Sessions rapides** : 10 paires de médias aléatoires par partie (images, vidéos, audio).
 - **Système de Score** : Points basés sur la justesse et la rapidité.
 - **Streak Bonus** : Multiplicateur de points pour les bonnes réponses consécutives.
+- **Time Bonus** : Points supplémentaires si réponse en moins de 5 secondes.
 - **Feedback Immédiat** : Explications détaillées après chaque réponse pour apprendre à repérer les indices de l'IA.
 - **Classement** : Un leaderboard global pour se mesurer aux autres joueurs.
 
 ### 👥 Mode Live (Classe)
 - **Compétition en temps réel** : Un enseignant/hôte projette le média, les élèves répondent sur leurs tablettes ou smartphones.
-- **Accès Simplifié** : Connexion via QR Code ou code de salon à 4 caractères.
+- **Accès Simplifié** : Connexion via QR Code ou code de salon à 6 caractères.
 - **Synchronisation Totale** : WebSockets pour une expérience fluide sans rafraîchissement.
 - **Podium Animé** : Affichage final des gagnants avec effets de confettis et animations de podium.
 - **Anti-Triche** : Persistance de session pour permettre la reconnexion en cas de coupure réseau.
+- **Bonus de position** : Les premiers à répondre correctement gagnent plus de points (+50, +30, +10).
 
 ### 🔐 Interface Administration
-- **Dashboard de Statistiques** : Visualisation des performances globales et des médias les plus trompeurs.
-- **Gestion du Contenu** : CRUD complet pour les catégories et les paires de médias.
-- **Éditeur de Quiz** : Création de parcours thématiques ou mode aléatoire.
-- **Upload Simplifié** : Gestion centralisée des images et vidéos.
+- **Dashboard de Statistiques** : Visualisation des performances globales, par type d'audience (scolaire / grand public).
+- **Gestion du Contenu** : CRUD complet pour les catégories et les paires de médias (images, vidéos, audio).
+- **Upload Simplifié** : Gestion centralisée des fichiers avec filtrage par catégorie, type et difficulté.
+- **Gestion des sessions** : Consultation et suppression des sessions de jeu.
+
+### 🏛️ Musée des Hallucinations
+- **Easter Egg** : Galerie interactive présentant les artefacts visuels typiques de l'IA (texte fantôme, lissage de porcelaine, fusion d'objets, etc.).
 
 ---
 
@@ -45,7 +50,7 @@
 
 ### Infrastructure
 - **Containerisation** : Docker & Docker Compose
-- **Reverse Proxy** : Nginx
+- **Reverse Proxy** : Nginx (sert les médias statiques, proxy API + WebSockets + frontend)
 
 ---
 
@@ -59,40 +64,93 @@
 
 1. **Cloner le projet**
    ```bash
-   git clone <repo-url>
-   cd Real_Vs_AI
+   git clone git@github.com:MaisonIA06/Real_VS_AI.git
+   cd Real_VS_AI
    ```
 
-
-
-2. **Lancement avec Docker**
+2. **Lancer les conteneurs**
    ```bash
-   docker-compose up --build
+   docker compose up --build -d
    ```
 
-3. **Accès aux services**
-   - **Application (Frontend)** : [http://localhost:8080](http://localhost:8080)
-   - **API REST** : [http://localhost:8080/api/](http://localhost:8080/api/)
-   - **Admin Django** : [http://localhost:8080/admin/](http://localhost:8080/admin/)
+3. **Peupler la base de données avec les paires existantes**
+   ```bash
+   docker exec realvsai_backend python manage.py populate_pairs
+   ```
+   > Ce script scanne automatiquement `backend/media/pairs/real/` et `backend/media/pairs/ai/` pour créer les catégories et paires de médias en base de données.
+   > Convention de nommage : `Nom.ext` (réel) ↔ `Nom_AI.ext` (IA), organisés par dossier-catégorie.
+
+4. **Accès aux services**
+   | Service | URL |
+   |---|---|
+   | Application (Frontend) | [http://localhost:8080](http://localhost:8080) |
+   | API REST | [http://localhost:8080/api/](http://localhost:8080/api/) |
+   | Interface Admin | [http://localhost:8080/admin](http://localhost:8080/admin) |
+
+### Commandes utiles
+
+```bash
+# Voir les logs
+docker compose logs -f
+
+# Arrêter les conteneurs
+docker compose down
+
+# Arrêter et supprimer les données (base de données)
+docker compose down -v
+
+# Relancer après un git pull
+docker compose up --build -d
+docker exec realvsai_backend python manage.py populate_pairs
+
+# Aperçu des paires détectées (sans modifier la base)
+docker exec realvsai_backend python manage.py populate_pairs --dry-run
+```
 
 ---
 
 ## 📁 Structure du Projet
 
 ```text
-WebApp/
-├── backend/                # API Django, Channels et Logique métier
-│   ├── apps/               # Applications Django (game, admin_api)
-│   ├── config/             # Configuration (settings, asgi, routing)
-│   └── media/              # Stockage des fichiers images/vidéos
-├── frontend/               # Application React
-│   ├── src/components/     # Composants réutilisables
-│   ├── src/pages/          # Vues principales et mode multiplayer
-│   ├── src/hooks/          # Logique partagée (WebSockets, API)
-│   └── src/services/       # Configuration API Axios
-├── nginx/                  # Configuration du proxy et service des médias
-└── docker-compose.yml      # Orchestration des conteneurs
+Real_VS_AI/
+├── backend/                    # API Django, Channels et logique métier
+│   ├── apps/
+│   │   ├── game/               # Modèles, vues, WebSocket consumers, management commands
+│   │   └── admin_api/          # API d'administration (CRUD catégories/paires, stats)
+│   ├── config/                 # Configuration (settings, asgi, urls, routing)
+│   └── media/                  # Stockage des fichiers médias
+│       └── pairs/
+│           ├── real/           # Médias réels organisés par catégorie
+│           └── ai/             # Médias IA organisés par catégorie
+├── frontend/                   # Application React
+│   ├── src/
+│   │   ├── components/         # Composants réutilisables (Timer, MediaDisplay, etc.)
+│   │   ├── pages/              # Pages principales + multiplayer + admin
+│   │   ├── hooks/              # Hooks personnalisés (useGameSession, useMultiplayerSocket)
+│   │   └── services/           # Configuration API Axios
+│   └── public/                 # Assets statiques (images easter egg, favicon)
+├── nginx/                      # Configuration du reverse proxy
+├── scripts/                    # Scripts de lancement kiosk (Linux, Windows)
+└── docker-compose.yml          # Orchestration des 5 conteneurs
 ```
+
+---
+
+## 🔄 Synchronisation entre machines
+
+Les **fichiers médias** (images/vidéos) sont versionnés dans Git. Les **données de la base** (catégories, paires) sont recréées automatiquement grâce au script `populate_pairs`.
+
+**Sur une nouvelle machine après un clone ou un pull :**
+```bash
+git pull origin main
+docker compose up --build -d
+docker exec realvsai_backend python manage.py populate_pairs
+```
+
+**Pour ajouter de nouvelles paires :**
+1. Placer les fichiers dans `backend/media/pairs/real/{catégorie}/Nom.ext` et `backend/media/pairs/ai/{catégorie}/Nom_AI.ext`
+2. Commiter et pusher les fichiers
+3. Lancer `docker exec realvsai_backend python manage.py populate_pairs` (les paires existantes ne sont pas dupliquées)
 
 ---
 
